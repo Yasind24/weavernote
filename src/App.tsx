@@ -1,4 +1,4 @@
-import React, { Suspense } from 'react';
+import React, { Suspense, useEffect } from 'react';
 import { Auth } from './components/Auth';
 import { Sidebar } from './components/Sidebar';
 import { NoteList } from './components/NoteList';
@@ -7,9 +7,16 @@ import { Footer } from './components/Footer';
 import { AuthInitializer } from './components/AuthInitializer';
 import { useSupabase } from './hooks/useSupabase';
 import { Toaster } from 'react-hot-toast';
+import { connectionManager } from './lib/supabaseConnection';
 
 export default function App() {
   const { user } = useSupabase();
+
+  // Initialize connection manager
+  useEffect(() => {
+    // Just accessing the connection manager is enough to initialize it
+    connectionManager;
+  }, []);
 
   return (
     <>

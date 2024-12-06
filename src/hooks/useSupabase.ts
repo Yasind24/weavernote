@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import useAuthStore from '../store/authStore';
 import useNotebookStore from '../store/notebookStore';
 import useNoteStore from '../store/noteStore';
+import { toast } from 'react-hot-toast';
 
 export function useSupabase() {
   const { user, setUser, initialized } = useAuthStore();
@@ -12,10 +13,15 @@ export function useSupabase() {
   const handleAuthChange = useCallback(async (session: any) => {
     if (session?.user) {
       setUser(session.user);
-      await Promise.all([
-        fetchNotebooks(),
-        fetchNotes()
-      ]);
+      try {
+        await Promise.all([
+          fetchNotebooks(),
+          fetchNotes()
+        ]);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        toast.error('Failed to load your data');
+      }
     } else {
       setUser(null);
     }
@@ -29,7 +35,15 @@ export function useSupabase() {
         await handleAuthChange(session);
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
+      } else if (event === 'USER_DELETED') {
+        setUser(null);
+        toast.error('Your account has been deleted');
       }
+    });
+
+    // Initial session check
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      handleAuthChange(session);
     });
 
     return () => {

@@ -1,7 +1,7 @@
 import { create } from 'zustand';
-import { supabase, fetchWithRetry } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
+import { toast } from 'react-hot-toast';
 import type { Note } from '../types/Note';
-import { PostgrestResponse } from '@supabase/supabase-js';
 
 interface NoteStore {
   notes: Note[];
@@ -11,16 +11,13 @@ interface NoteStore {
   currentNote: Partial<Note> | null;
   isEditing: boolean;
   fetchNotes: (notebookId?: string) => Promise<void>;
-  addNote: (note: Omit<Note, 'id' | 'created_at' | 'updated_at'>) => Promise<void>;
+  addNote: (note: Omit<Note, 'id' | 'created_at' | 'updated_at'>) => Promise<Note>;
   updateNote: (id: string, updates: Partial<Note>) => Promise<void>;
   deleteNote: (id: string) => Promise<void>;
   removeNotesFromNotebook: (notebookId: string) => void;
   removeNotesFromFolder: (notebookIds: string[]) => void;
   createNewNote: () => void;
-}
-
-interface PostgrestError {
-  message: string;
+  clearError: () => void;
 }
 
 const useNoteStore = create<NoteStore>((set, get) => ({
@@ -31,35 +28,31 @@ const useNoteStore = create<NoteStore>((set, get) => ({
   currentNote: null,
   isEditing: false,
 
+  clearError: () => set({ error: null }),
+
   fetchNotes: async (notebookId) => {
-    if (get().isFetching) {
-      console.log('Already fetching notes, skipping...');
-      return;
-    }
+    if (get().isFetching) return;
 
     set({ isFetching: true, error: null });
     try {
-      const fetchOperation = async () => {
-        let query = supabase.from('notes').select('*');
-        if (notebookId) {
-          query = query.eq('notebook_id', notebookId);
-        }
-        const response = await query.order('created_at', { ascending: false });
-        return response;
-      };
-
-      const { data, error } = await fetchWithRetry(fetchOperation);
-      
-      if (error) throw error;
-      if (!data) {
-        throw new Error('No data returned from database');
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        throw new Error('No active session');
       }
-      
-      set({ notes: Array.isArray(data) ? data : [data], error: null });
+
+      let query = supabase.from('notes').select('*');
+      if (notebookId) {
+        query = query.eq('notebook_id', notebookId);
+      }
+      const { data, error } = await query.order('created_at', { ascending: false });
+
+      if (error) throw error;
+      set({ notes: data || [], error: null });
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch notes';
-      console.error('Error fetching notes:', errorMessage);
-      set({ error: errorMessage });
+      console.error('Error fetching notes:', error);
+      const message = error instanceof Error ? error.message : 'Failed to fetch notes';
+      set({ error: message });
+      toast.error(message);
     } finally {
       set({ isFetching: false });
     }
@@ -68,110 +61,118 @@ const useNoteStore = create<NoteStore>((set, get) => ({
   addNote: async (note) => {
     set({ loading: true, error: null });
     try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        throw new Error('No active session');
+      }
+
       const now = new Date().toISOString();
-      const { data, error } = await fetchWithRetry(async () => {
-        const response = await supabase
-          .from('notes')
-          .insert([{
-            title: note.title || 'Untitled',
-            content: note.content || '',
-            notebook_id: note.notebook_id,
-            user_id: note.user_id,
-            is_pinned: note.is_pinned || false,
-            is_archived: note.is_archived || false,
-            is_trashed: note.is_trashed || false,
-            trashed_at: note.trashed_at || null,
-            color: note.color || '#ffffff',
-            labels: note.labels || [],
-            tags: note.tags || [],
-            position_x: note.position_x || null,
-            position_y: note.position_y || null,
-            layout_type: note.layout_type || 'circular',
-            created_at: now,
-            updated_at: now
-          }])
-          .select()
-          .single();
-        return response;
-      });
+      const noteData = {
+        ...note,
+        created_at: now,
+        updated_at: now,
+        labels: note.labels || [],
+        tags: note.tags || []
+      };
+
+      const { data, error } = await supabase
+        .from('notes')
+        .insert([noteData])
+        .select()
+        .single();
 
       if (error) throw error;
-      if (!data) throw new Error('No data returned');
-      
-      set((state) => ({ 
-        notes: [data as Note, ...state.notes]
+      if (!data) throw new Error('Failed to create note');
+
+      const newNote = data as Note;
+      set(state => ({
+        notes: [newNote, ...state.notes],
+        loading: false,
+        error: null
       }));
+
+      return newNote;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to add note';
-      console.error('Error adding note:', errorMessage);
-      set({ error: errorMessage });
-      throw error;
-    } finally {
-      set({ loading: false });
+      const message = error instanceof Error ? error.message : 'Failed to create note';
+      set({ error: message, loading: false });
+      toast.error(message);
+      throw new Error(message);
     }
   },
 
   updateNote: async (id, updates) => {
+    set({ loading: true, error: null });
     try {
-      const { data, error } = await fetchWithRetry(async () => {
-        const response = await supabase
-          .from('notes')
-          .update({
-            ...updates,
-            updated_at: new Date().toISOString(),
-            labels: updates.labels || [],
-            tags: updates.tags || []
-          })
-          .eq('id', id)
-          .select()
-          .single();
-        return response;
-      });
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        throw new Error('No active session');
+      }
+
+      const { data, error } = await supabase
+        .from('notes')
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString(),
+          labels: updates.labels || [],
+          tags: updates.tags || []
+        })
+        .eq('id', id)
+        .select()
+        .single();
 
       if (error) throw error;
-      if (!data) throw new Error('No data returned');
+      if (!data) throw new Error('Note not found');
 
-      set((state) => ({
-        notes: state.notes.map((note) => 
-          note.id === id ? (data as Note) : note
-        )
+      set(state => ({
+        notes: state.notes.map(note => note.id === id ? (data as Note) : note),
+        loading: false,
+        error: null
       }));
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to update note';
-      console.error('Error updating note:', errorMessage);
-      set({ error: errorMessage });
+      const message = error instanceof Error ? error.message : 'Failed to update note';
+      set({ error: message, loading: false });
+      toast.error(message);
+      throw new Error(message);
     }
   },
 
   deleteNote: async (id) => {
+    set({ loading: true, error: null });
     try {
-      const { error } = await fetchWithRetry(async () => {
-        const response = await supabase
-          .from('notes')
-          .delete()
-          .eq('id', id);
-        return response;
-      }) as PostgrestResponse<null>;
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        throw new Error('No active session');
+      }
+
+      const { error } = await supabase
+        .from('notes')
+        .delete()
+        .eq('id', id);
 
       if (error) throw error;
-      set((state) => ({
-        notes: state.notes.filter((note) => note.id !== id)
+
+      set(state => ({
+        notes: state.notes.filter(note => note.id !== id),
+        loading: false,
+        error: null
       }));
     } catch (error) {
-      console.error('Error deleting note:', error);
-      set({ error: (error as PostgrestError).message });
+      const message = error instanceof Error ? error.message : 'Failed to delete note';
+      set({ error: message, loading: false });
+      toast.error(message);
+      throw new Error(message);
     }
   },
 
   removeNotesFromNotebook: (notebookId) => {
-    set((state) => ({
-      notes: state.notes.filter((note) => note.notebook_id !== notebookId),
+    set(state => ({
+      notes: state.notes.filter(note => note.notebook_id !== notebookId)
     }));
   },
 
   removeNotesFromFolder: (notebookIds) => {
-    set((state) => ({
-      notes: state.notes.filter((note) => !notebookIds.includes(note.notebook_id))
+    set(state => ({
+      notes: state.notes.filter(note => !notebookIds.includes(note.notebook_id))
     }));
   },
 
@@ -197,7 +198,7 @@ const useNoteStore = create<NoteStore>((set, get) => ({
       },
       isEditing: true
     });
-  },
+  }
 }));
 
 export default useNoteStore;

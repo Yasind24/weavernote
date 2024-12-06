@@ -1,19 +1,31 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './database.types';
+import { toast } from 'react-hot-toast';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables');
+  console.error('Missing Supabase environment variables');
 }
 
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
+export const supabase = createClient<Database>(
+  supabaseUrl || '',
+  supabaseAnonKey || '',
+  {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+      storage: localStorage,
+    },
+    realtime: {
+      params: {
+        eventsPerSecond: 10,
+      },
+    },
   }
-});
+);
 
 export async function fetchWithRetry<T>(
   operation: () => Promise<T>,
@@ -21,22 +33,35 @@ export async function fetchWithRetry<T>(
   baseDelay = 1000
 ): Promise<T> {
   let lastError: Error | null = null;
+  let attempt = 0;
 
-  for (let attempt = 0; attempt < maxRetries; attempt++) {
+  while (attempt < maxRetries) {
     try {
+      // Check session before each attempt
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('No active session');
+      }
+
       return await operation();
     } catch (error) {
       lastError = error as Error;
       console.warn(`Attempt ${attempt + 1} failed:`, error);
-
+      
+      if (error instanceof Error && error.message === 'No active session') {
+        toast.error('Session expired. Please refresh the page.');
+        break;
+      }
+      
       if (attempt < maxRetries - 1) {
         const delay = baseDelay * Math.pow(2, attempt) + Math.random() * 1000;
         await new Promise(resolve => setTimeout(resolve, delay));
       }
+      attempt++;
     }
   }
 
-  throw lastError || new Error('Operation failed');
+  throw lastError || new Error('Operation failed after retries');
 }
 
 export async function uploadImage(file: File, userId: string): Promise<string | null> {
@@ -49,9 +74,7 @@ export async function uploadImage(file: File, userId: string): Promise<string | 
       .from('note-images')
       .upload(filePath, file);
 
-    if (uploadError) {
-      throw uploadError;
-    }
+    if (uploadError) throw uploadError;
 
     const { data } = supabase.storage
       .from('note-images')
@@ -60,6 +83,7 @@ export async function uploadImage(file: File, userId: string): Promise<string | 
     return data.publicUrl;
   } catch (error) {
     console.error('Error uploading image:', error);
+    toast.error('Failed to upload image');
     return null;
   }
 }
@@ -70,11 +94,13 @@ let isOffline = false;
 window.addEventListener('online', () => {
   isOffline = false;
   console.log('Connection restored');
+  toast.success('Connection restored');
 });
 
 window.addEventListener('offline', () => {
   isOffline = true;
   console.log('Connection lost');
+  toast.error('Connection lost');
 });
 
 // Helper to check connection before operations

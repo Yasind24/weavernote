@@ -4,6 +4,7 @@ import useNoteStore from '../store/noteStore';
 import useSidebarStore from '../store/sidebarStore';
 import useNotebookStore from '../store/notebookStore';
 import useFolderStore from '../store/folderStore';
+import useDraftStore from '../store/draftStore';
 import NoteCard from './NoteCard';
 import NoteEditor from './NoteEditor';
 import { DateRangeFilter } from './DateRangeFilter';
@@ -15,6 +16,7 @@ export function NoteList() {
   const { notes, fetchNotes } = useNoteStore();
   const { notebooks } = useNotebookStore();
   const { folders } = useFolderStore();
+  const { setDraft } = useDraftStore();
   const { selectedCategory, selectedFolder } = useSidebarStore();
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
@@ -30,6 +32,7 @@ export function NoteList() {
   const handleEditorClose = () => {
     setIsEditorOpen(false);
     setSelectedNote(null);
+    setDraft(null); // Clear draft when closing editor
     fetchNotes();
   };
 
@@ -38,6 +41,13 @@ export function NoteList() {
     setIsEditorOpen(true);
   };
 
+  const handleNewNote = () => {
+    setSelectedNote(null);
+    setDraft(null); // Clear any existing draft
+    setIsEditorOpen(true);
+  };
+
+  // Rest of the component remains the same...
   const getFilteredNotes = () => {
     let filtered = notes;
 
@@ -152,10 +162,7 @@ export function NoteList() {
                   <span>Visualize</span>
                 </button>
                 <button
-                  onClick={() => {
-                    setSelectedNote(null);
-                    setIsEditorOpen(true);
-                  }}
+                  onClick={handleNewNote}
                   className="w-full sm:w-auto px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 flex items-center justify-center space-x-2"
                 >
                   <Plus size={20} />

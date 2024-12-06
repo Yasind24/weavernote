@@ -26,6 +26,7 @@ export default function NoteEditor({ note, initialNotebookId, onClose }: NoteEdi
   const { user } = useAuthStore();
   const { selectedCategory, selectedFolder } = useSidebarStore();
   const [isReadMode, setIsReadMode] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   
   const [state, setState] = useState({
     title: note?.title || draft?.title || '',
@@ -42,8 +43,6 @@ export default function NoteEditor({ note, initialNotebookId, onClose }: NoteEdi
     colorPicker: false,
     labelManager: false
   });
-
-  const [isSaving, setIsSaving] = useState(false);
 
   const updateField = useCallback((field: keyof typeof state, value: any) => {
     setState(prev => ({ ...prev, [field]: value }));
@@ -85,12 +84,12 @@ export default function NoteEditor({ note, initialNotebookId, onClose }: NoteEdi
 
   const handleSave = async () => {
     if (!state.selectedNotebookId) {
-      alert('Please select a notebook');
+      toast.error('Please select a notebook');
       return;
     }
 
     if (!user) {
-      alert('You must be logged in to save notes');
+      toast.error('You must be logged in to save notes');
       return;
     }
 
@@ -115,13 +114,17 @@ export default function NoteEditor({ note, initialNotebookId, onClose }: NoteEdi
 
       if (note) {
         await updateNote(note.id, noteData);
+        toast.success('Note updated successfully');
       } else {
         await addNote(noteData);
+        toast.success('Note created successfully');
       }
+      
+      setDraft(null);
       onClose();
     } catch (error) {
       console.error('Error saving note:', error);
-      toast.error('Failed to save note');
+      toast.error(error instanceof Error ? error.message : 'Failed to save note');
     } finally {
       setIsSaving(false);
     }
@@ -147,10 +150,7 @@ export default function NoteEditor({ note, initialNotebookId, onClose }: NoteEdi
         }),
       ]);
 
-      toast.success('Copied to clipboard!', {
-        duration: 2000,
-        position: 'bottom-center',
-      });
+      toast.success('Copied to clipboard!');
     } catch (error) {
       console.error('Failed to copy to clipboard:', error);
       toast.error('Failed to copy to clipboard');
