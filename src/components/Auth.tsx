@@ -5,10 +5,9 @@ import { supabase } from '../lib/supabase';
 import { Footer } from './Footer';
 
 export function Auth() {
-  // Determine the correct redirect URL based on environment
-  const redirectUrl = import.meta.env.DEV 
-    ? 'http://localhost:5173'
-    : 'https://weavernote.com';
+  // Use VITE_SUPABASE_REDIRECT_URL from environment variables if available, otherwise fallback to environment check
+  const redirectUrl = import.meta.env.VITE_SUPABASE_REDIRECT_URL || 
+    (import.meta.env.DEV ? 'http://localhost:5173' : 'https://weavernote.com');
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
@@ -29,7 +28,7 @@ export function Auth() {
               },
             }}
             providers={['google']}
-            redirectTo={`${redirectUrl}/`}
+            redirectTo={redirectUrl}
           />
         </div>
       </div>
