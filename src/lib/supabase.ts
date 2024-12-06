@@ -5,13 +5,20 @@ import { toast } from 'react-hot-toast';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Missing Supabase environment variables');
+// Validate URL format
+if (!supabaseUrl || !supabaseUrl.startsWith('https://')) {
+  console.error('Invalid Supabase URL. Must be a valid HTTPS URL:', supabaseUrl);
+  throw new Error('Invalid Supabase URL configuration');
+}
+
+if (!supabaseAnonKey) {
+  console.error('Missing Supabase Anon Key');
+  throw new Error('Missing Supabase configuration');
 }
 
 export const supabase = createClient<Database>(
-  supabaseUrl || '',
-  supabaseAnonKey || '',
+  supabaseUrl,
+  supabaseAnonKey,
   {
     auth: {
       persistSession: true,

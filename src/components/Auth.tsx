@@ -5,6 +5,11 @@ import { supabase } from '../lib/supabase';
 import { Footer } from './Footer';
 
 export function Auth() {
+  // Determine the correct redirect URL based on environment
+  const redirectUrl = import.meta.env.DEV 
+    ? 'http://localhost:5173'
+    : 'https://weavernote.com';
+
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
       <div className="flex-1 flex items-center justify-center p-4">
@@ -24,6 +29,7 @@ export function Auth() {
               },
             }}
             providers={['google']}
+            redirectTo={`${redirectUrl}/`}
           />
         </div>
       </div>
