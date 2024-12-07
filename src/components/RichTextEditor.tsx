@@ -45,6 +45,7 @@ import CodeSnippetDialog from './editor/CodeSnippetDialog';
 import TableDialog from './editor/TableDialog';
 import { createPortal } from 'react-dom';
 import { Portal } from '@headlessui/react';
+import { toast } from 'react-hot-toast';
 
 // Initialize lowlight with common languages
 const lowlight = createLowlight(common);
@@ -505,7 +506,12 @@ export default function RichTextEditor({ content, onChange, lineWrapping }: Rich
         nested: true,
       }),
       Underline,
-      Image,
+      Image.configure({
+        HTMLAttributes: {
+          class: 'max-w-full h-auto my-4',
+          draggable: 'false'
+        },
+      }),
       Table.configure({
         resizable: true,
         handleWidth: 5,
@@ -528,7 +534,8 @@ export default function RichTextEditor({ content, onChange, lineWrapping }: Rich
       attributes: {
         class: 'prose max-w-none focus:outline-none min-h-[300px]',
       },
-      handlePaste: (view, _event) => {
+      handlePaste: (view, event, slice) => {
+        // Handle code block paste
         if (view.state.selection.$head.parent.type.name === 'codeBlock') {
           setTimeout(() => {
             editor?.chain()
@@ -542,7 +549,40 @@ export default function RichTextEditor({ content, onChange, lineWrapping }: Rich
               .enter()
               .run();
           }, 0);
+          return false;
         }
+
+        // Handle image paste
+        const items = Array.from(event.clipboardData?.items || []);
+        const imageItem = items.find(item => item.type.startsWith('image/'));
+        
+        if (imageItem && user) {
+          event.preventDefault();
+          const file = imageItem.getAsFile();
+          if (!file) return true;
+
+          // Upload and insert image asynchronously
+          (async () => {
+            try {
+              setUploading(true);
+              const imageUrl = await uploadImage(file, user.id);
+              if (imageUrl) {
+                editor?.chain()
+                  .focus()
+                  .setImage({ src: imageUrl })
+                  .createParagraphNear()
+                  .run();
+              }
+            } catch (error) {
+              console.error('Error uploading pasted image:', error);
+              toast.error('Failed to upload pasted image');
+            } finally {
+              setUploading(false);
+            }
+          })();
+          return true;
+        }
+
         return false;
       },
     },

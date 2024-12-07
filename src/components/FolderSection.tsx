@@ -130,7 +130,10 @@ export function FolderSection({
           {folderNotebooks.map((notebook) => (
             <div key={notebook.id} className="group">
               <div
-                onClick={() => onSelectCategory(notebook.id)}
+                onClick={() => {
+                  onSelectCategory(notebook.id);
+                  setSelectedFolder(null);
+                }}
                 className={`w-full flex items-center cursor-pointer ${
                   isCollapsed ? 'justify-center' : 'justify-between'
                 } px-3 py-2 rounded-lg transition-colors ${

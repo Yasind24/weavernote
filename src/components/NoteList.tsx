@@ -63,6 +63,13 @@ export function NoteList() {
         !note.is_archived &&
         !note.is_trashed
       );
+    } else if (selectedCategory !== 'all' && selectedCategory !== 'archive' && selectedCategory !== 'trash') {
+      // If a notebook is selected
+      filtered = notes.filter(note => 
+        note.notebook_id === selectedCategory && 
+        !note.is_archived && 
+        !note.is_trashed
+      );
     } else {
       // Apply category filters
       switch (selectedCategory) {
@@ -75,13 +82,6 @@ export function NoteList() {
         case 'trash':
           filtered = notes.filter(note => note.is_trashed);
           break;
-        default:
-          // If a notebook is selected
-          filtered = notes.filter(note => 
-            note.notebook_id === selectedCategory && 
-            !note.is_archived && 
-            !note.is_trashed
-          );
       }
     }
 

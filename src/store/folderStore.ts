@@ -10,7 +10,7 @@ interface FolderStore {
   loading: boolean;
   error: string | null;
   fetchFolders: () => Promise<void>;
-  addFolder: (folder: Omit<Folder, 'id' | 'created_at'>) => Promise<void>;
+  addFolder: (folder: Omit<Folder, 'id' | 'created_at'>) => Promise<Folder | null>;
   updateFolder: (id: string, updates: Partial<Folder>) => Promise<void>;
   deleteFolder: (id: string) => Promise<{ success: boolean; error?: string }>;
 }
@@ -30,7 +30,7 @@ const useFolderStore = create<FolderStore>((set) => ({
 
       if (error) throw error;
       set({ folders: data || [], error: null });
-    } catch (error) {
+    } catch (error: any) {
       set({ error: error.message });
     } finally {
       set({ loading: false });
@@ -46,10 +46,14 @@ const useFolderStore = create<FolderStore>((set) => ({
         .single();
 
       if (error) throw error;
+      if (!data) throw new Error('Failed to create folder');
+      
       set((state) => ({ folders: [data, ...state.folders] }));
+      return data;
     } catch (error) {
       console.error('Error adding folder:', error);
-      set({ error: error.message });
+      set({ error: error instanceof Error ? error.message : 'Failed to create folder' });
+      return null;
     }
   },
 
@@ -68,7 +72,7 @@ const useFolderStore = create<FolderStore>((set) => ({
           folder.id === id ? data : folder
         ),
       }));
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating folder:', error);
       set({ error: error.message });
     }
@@ -98,14 +102,14 @@ const useFolderStore = create<FolderStore>((set) => ({
       }));
 
       // Update note store to remove deleted notes
-      useNoteStore.getState().removeNotesFromFolder(id, notebookIds);
+      useNoteStore.getState().removeNotesFromFolder(notebookIds);
 
       return { success: true };
     } catch (error) {
       console.error('Error deleting folder:', error);
       return {
         success: false,
-        error: error.message
+        error: (error as Error).message
       };
     }
   },

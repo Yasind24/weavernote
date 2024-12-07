@@ -47,32 +47,51 @@ export function FolderNotebookSelect({
   );
 
   const handleCreateFolder = async () => {
-    if (!newFolderName.trim() || !user) return;
+    if (!newFolderName.trim()) {
+      setError('Please enter a folder name');
+      return;
+    }
+    if (!user) {
+      setError('You must be logged in to create a folder');
+      return;
+    }
     setError('');
 
     try {
-      await addFolder({
+      const folder = {
         name: newFolderName.trim(),
         user_id: user.id,
         color: '#ffffff',
         is_default: false,
-      });
+      };
+      
+      const result = await addFolder(folder);
+      if (!result) {
+        throw new Error('Failed to create folder');
+      }
+      
       setShowNewFolderInput(false);
       setNewFolderName('');
     } catch (error) {
       console.error('Error creating folder:', error);
-      setError('Failed to create folder');
+      setError(error instanceof Error ? error.message : 'Failed to create folder');
     }
   };
 
   const handleCreateNotebook = async () => {
-    if (!newNotebookName.trim() || !user) return;
-    setError('');
-
+    if (!newNotebookName.trim()) {
+      setError('Please enter a notebook name');
+      return;
+    }
+    if (!user) {
+      setError('You must be logged in to create a notebook');
+      return;
+    }
     if (!selectedFolderId) {
       setError('Please select a folder first');
       return;
     }
+    setError('');
 
     try {
       const notebook = {
@@ -83,14 +102,16 @@ export function FolderNotebookSelect({
       };
 
       const newNotebook = await addNotebook(notebook);
-      if (newNotebook) {
-        onNotebookSelect(newNotebook.id);
+      if (!newNotebook) {
+        throw new Error('Failed to create notebook');
       }
+
+      onNotebookSelect(newNotebook.id);
       setShowNewNotebookInput(false);
       setNewNotebookName('');
     } catch (error) {
       console.error('Error creating notebook:', error);
-      setError('Failed to create notebook');
+      setError(error instanceof Error ? error.message : 'Failed to create notebook');
     }
   };
 

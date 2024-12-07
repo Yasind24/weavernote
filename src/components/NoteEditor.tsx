@@ -27,6 +27,7 @@ export default function NoteEditor({ note, initialNotebookId, onClose }: NoteEdi
   const { selectedCategory, selectedFolder } = useSidebarStore();
   const [isReadMode, setIsReadMode] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [saveTimeoutId, setSaveTimeoutId] = useState<NodeJS.Timeout | null>(null);
   
   const [state, setState] = useState({
     title: note?.title || draft?.title || '',
@@ -70,6 +71,14 @@ export default function NoteEditor({ note, initialNotebookId, onClose }: NoteEdi
 
   useEffect(() => {
     return () => {
+      if (saveTimeoutId) {
+        clearTimeout(saveTimeoutId);
+      }
+    };
+  }, [saveTimeoutId]);
+
+  useEffect(() => {
+    return () => {
       if (!note && (state.title || state.content)) {
         setDraft({
           title: state.title,
@@ -93,8 +102,33 @@ export default function NoteEditor({ note, initialNotebookId, onClose }: NoteEdi
       return;
     }
 
+    if (isSaving) {
+      // If already saving, schedule another save attempt
+      if (saveTimeoutId) {
+        clearTimeout(saveTimeoutId);
+      }
+      const timeoutId = setTimeout(handleSave, 1000);
+      setSaveTimeoutId(timeoutId);
+      return;
+    }
+
     setIsSaving(true);
+    const saveTimeout = setTimeout(() => {
+      setIsSaving(false);
+      toast.error('Save operation timed out. Please try again.');
+    }, 30000); // 30 second timeout
+
     try {
+      // Create a draft before saving in case of failure
+      const draftData = {
+        title: state.title,
+        content: state.content,
+        notebookId: state.selectedNotebookId,
+        color: state.color,
+        labels: state.labels,
+      };
+      setDraft(draftData);
+
       const noteData = {
         title: state.title || 'Untitled',
         content: state.content,
@@ -119,13 +153,34 @@ export default function NoteEditor({ note, initialNotebookId, onClose }: NoteEdi
         await addNote(noteData);
         toast.success('Note created successfully');
       }
-      
+
+      // Only clear the draft if save was successful
       setDraft(null);
       onClose();
     } catch (error) {
       console.error('Error saving note:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to save note');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save note';
+      toast.error(errorMessage);
+      
+      // Keep the draft in case of error
+      if (!note) {
+        setDraft({
+          title: state.title,
+          content: state.content,
+          notebookId: state.selectedNotebookId,
+          color: state.color,
+          labels: state.labels,
+        });
+      }
+
+      // Schedule a retry
+      if (saveTimeoutId) {
+        clearTimeout(saveTimeoutId);
+      }
+      const timeoutId = setTimeout(handleSave, 2000);
+      setSaveTimeoutId(timeoutId);
     } finally {
+      clearTimeout(saveTimeout);
       setIsSaving(false);
     }
   };
