@@ -23,7 +23,6 @@ interface Folder {
   name: string;
   user_id: string;
   color: string;
-  is_default: boolean;
 }
 
 interface Notebook {

@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { MoreVertical, Edit, Trash2 } from 'lucide-react';
 import { useClickOutside } from '../hooks/useClickOutside';
-import type { Folder } from '../types';
+import type { Folder } from '../types/Note';
 
 interface FolderMenuProps {
   folder: Folder;
@@ -26,10 +26,6 @@ export function FolderMenu({ folder, onEdit, onDelete }: FolderMenuProps) {
     onDelete(folder);
     setShowMenu(false);
   };
-
-  if (folder.is_default) {
-    return null;
-  }
 
   return (
     <div className="relative" ref={menuRef}>
