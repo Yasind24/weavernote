@@ -3,12 +3,13 @@ import { Heart } from 'lucide-react';
 
 interface FooterProps {
   showCredit?: boolean;
+  size?: 'default' | 'compact';
 }
 
-export function Footer({ showCredit = false }: FooterProps) {
+export function Footer({ showCredit = false, size = 'default' }: FooterProps) {
   return (
     <footer className="bg-white border-t">
-      <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+      <div className={`max-w-7xl mx-auto ${size === 'compact' ? 'py-3' : 'py-6'} px-4 sm:px-6 lg:px-8`}>
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
           {showCredit ? (
             <div className="flex items-center space-x-1 text-sm text-gray-600">

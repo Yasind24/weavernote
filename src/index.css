@@ -3,6 +3,10 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --sidebar-width: 16rem;
+    --sidebar-width-collapsed: 4rem;
+  }
   body {
     @apply text-gray-900 bg-gray-50;
   }

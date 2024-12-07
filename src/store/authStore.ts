@@ -11,6 +11,7 @@ interface AuthState {
   setUser: (user: User | null) => void;
   signOut: () => Promise<void>;
   initializeAuth: () => Promise<void>;
+  refreshSession: () => Promise<void>;
 }
 
 const useAuthStore = create<AuthState>()(
@@ -30,6 +31,19 @@ const useAuthStore = create<AuthState>()(
         } catch (error) {
           console.error('Error signing out:', error);
           set({ error: 'Failed to sign out' });
+        }
+      },
+
+      refreshSession: async () => {
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.user) {
+            set({ user: session.user, error: null });
+          }
+        } catch (error) {
+          console.error('Error refreshing session:', error);
+          set({ error: 'Failed to refresh session' });
+          throw error;
         }
       },
 

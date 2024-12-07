@@ -125,64 +125,94 @@ const useNoteStore = create<NoteStore>((set, get) => ({
   },
 
   updateNote: async (id, updates) => {
-    if (get().loading) {
-      throw new Error('Another operation is in progress');
-    }
-    
-    set({ loading: true, error: null });
-    let retryCount = 0;
-    const maxRetries = 3;
+    // Update UI immediately for better responsiveness
+    set(state => ({
+      notes: state.notes.map(note => 
+        note.id === id 
+          ? { ...note, ...updates, updated_at: new Date().toISOString() }
+          : note
+      )
+    }));
 
-    while (retryCount < maxRetries) {
-      try {
-        const { data: sessionData } = await supabase.auth.getSession();
-        if (!sessionData.session) {
-          throw new Error('No active session');
-        }
-
-        const { data, error } = await supabase
-          .from('notes')
-          .update({
-            ...updates,
-            updated_at: new Date().toISOString(),
-            labels: updates.labels || [],
-            tags: updates.tags || []
-          })
-          .eq('id', id)
-          .select()
-          .single();
-
-        if (error) {
-          if (error.code === 'PGRST116' || error.message.includes('JWT')) {
-            // Token expired or invalid, retry after refreshing session
-            await supabase.auth.refreshSession();
-            retryCount++;
-            continue;
-          }
-          throw error;
-        }
-
-        if (!data) throw new Error('Note not found');
-
-        set(state => ({
-          notes: state.notes.map(note => note.id === id ? (data as Note) : note),
-          loading: false,
-          error: null
-        }));
-        return;
-      } catch (error) {
-        if (retryCount === maxRetries - 1) {
-          const message = error instanceof Error ? error.message : 'Failed to update note';
-          set({ error: message, loading: false });
-          toast.error(message);
-          throw new Error(message);
-        }
-        retryCount++;
-        await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        throw new Error('No active session');
       }
+
+      const { data, error } = await supabase
+        .from('notes')
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString(),
+          labels: updates.labels || [],
+          tags: updates.tags || []
+        })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116' || error.message.includes('JWT')) {
+          // Token expired or invalid, refresh session and retry
+          await supabase.auth.refreshSession();
+          // Retry the update
+          const { data: retryData, error: retryError } = await supabase
+            .from('notes')
+            .update({
+              ...updates,
+              updated_at: new Date().toISOString(),
+              labels: updates.labels || [],
+              tags: updates.tags || []
+            })
+            .eq('id', id)
+            .select()
+            .single();
+
+          if (retryError) throw retryError;
+          if (!retryData) throw new Error('Note not found');
+          
+          set(state => ({
+            notes: state.notes.map(note => note.id === id ? (retryData as Note) : note),
+            error: null
+          }));
+          return;
+        }
+        throw error;
+      }
+
+      if (!data) throw new Error('Note not found');
+
+      set(state => ({
+        notes: state.notes.map(note => note.id === id ? (data as Note) : note),
+        error: null
+      }));
+    } catch (error) {
+      // Revert the optimistic update on error
+      const message = error instanceof Error ? error.message : 'Failed to update note';
+      set(state => ({ 
+        error: message,
+        notes: state.notes.map(note => {
+          if (note.id === id) {
+            // Fetch the original note from the server
+            supabase
+              .from('notes')
+              .select('*')
+              .eq('id', id)
+              .single()
+              .then(({ data }) => {
+                if (data) {
+                  set(state => ({
+                    notes: state.notes.map(n => n.id === id ? (data as Note) : n)
+                  }));
+                }
+              });
+          }
+          return note;
+        })
+      }));
+      toast.error(message);
     }
-    set({ loading: false });
-    throw new Error('Failed to update note after retries');
   },
 
   deleteNote: async (id) => {

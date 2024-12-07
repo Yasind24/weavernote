@@ -19,10 +19,13 @@ interface Note {
 }
 
 interface Folder {
+  is_default: unknown;
   id: string;
   name: string;
   user_id: string;
   color: string;
+  is_pinned: boolean;
+  created_at: string;
 }
 
 interface Notebook {

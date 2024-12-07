@@ -81,8 +81,14 @@ export function FolderSection({
   };
 
   return (
-    <div className="mb-1">
-      <div className="flex items-center justify-between group">
+    <div className="w-full overflow-hidden">
+      <div
+        className={`group flex items-center ${
+          isCollapsed ? 'justify-center' : 'justify-between'
+        } px-3 py-2 rounded-lg transition-colors ${
+          isSelected ? 'bg-yellow-100 text-yellow-800' : 'text-gray-700 hover:bg-gray-100'
+        } cursor-pointer`}
+      >
         <button
           onClick={() => {
             if (!isCollapsed) {
@@ -90,24 +96,30 @@ export function FolderSection({
             }
             onSelectFolder(folder.id);
           }}
-          className={`flex items-center ${
-            isCollapsed ? 'justify-center w-full' : 'space-x-2'
-          } px-3 py-2 rounded-lg hover:bg-gray-100 text-gray-700 w-full text-left ${
-            isSelected ? 'bg-yellow-100 text-yellow-800' : ''
-          }`}
+          className={`flex items-center ${isCollapsed ? 'justify-center' : ''} flex-1 min-w-0 space-x-2`}
         >
           {!isCollapsed && (
-            <span className="text-gray-400">
+            <span className="text-gray-400 flex-shrink-0">
               {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
             </span>
           )}
           <FolderIcon size={20} className="flex-shrink-0" />
           {!isCollapsed && (
-            <span className="flex-1 truncate">{folder.name}</span>
+            <div className="flex items-center min-w-0 overflow-hidden">
+              <span className="truncate">{folder.name}</span>
+              {folder.is_pinned && (
+                <div className="ml-2 text-yellow-600 flex-shrink-0" title="Pinned">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="12" y1="17" x2="12" y2="22"/>
+                    <path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/>
+                  </svg>
+                </div>
+              )}
+            </div>
           )}
         </button>
         {!isCollapsed && (
-          <div className="flex items-center">
+          <div className="flex items-center flex-shrink-0 ml-2">
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -125,8 +137,8 @@ export function FolderSection({
           </div>
         )}
       </div>
-      {isExpanded && (
-        <div className={`mt-1 ${isCollapsed ? '' : 'ml-6'}`}>
+      {isExpanded && !isCollapsed && (
+        <div className="mt-1 ml-6 overflow-hidden">
           {folderNotebooks.map((notebook) => (
             <div key={notebook.id} className="group">
               <div
@@ -134,28 +146,22 @@ export function FolderSection({
                   onSelectCategory(notebook.id);
                   setSelectedFolder(null);
                 }}
-                className={`w-full flex items-center cursor-pointer ${
-                  isCollapsed ? 'justify-center' : 'justify-between'
-                } px-3 py-2 rounded-lg transition-colors ${
+                className={`flex items-center justify-between px-3 py-2 rounded-lg transition-colors ${
                   selectedCategory === notebook.id
                     ? 'bg-yellow-100 text-yellow-800'
                     : 'text-gray-700 hover:bg-gray-100'
-                }`}
+                } cursor-pointer`}
               >
-                <div className="flex items-center space-x-3 min-w-0">
-                  <Book size={16} className="flex-shrink-0" />
-                  {!isCollapsed && (
-                    <span className="truncate">{notebook.name}</span>
-                  )}
+                <div className="flex items-center min-w-0 space-x-2">
+                  <Book size={20} className="flex-shrink-0" />
+                  <span className="truncate">{notebook.name}</span>
                 </div>
-                {!isCollapsed && (
-                  <NotebookMenu
-                    notebook={notebook}
-                    onEdit={onEditNotebook}
-                    onDelete={onDeleteNotebook}
-                    onMove={onMoveNotebook}
-                  />
-                )}
+                <NotebookMenu
+                  notebook={notebook}
+                  onEdit={onEditNotebook}
+                  onDelete={() => handleDeleteNotebook(notebook)}
+                  onMove={onMoveNotebook}
+                />
               </div>
             </div>
           ))}

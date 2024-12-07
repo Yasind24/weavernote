@@ -1,4 +1,4 @@
-import React, { Suspense, useEffect } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
 import { Auth } from './components/Auth';
 import { Sidebar } from './components/Sidebar';
 import { NoteList } from './components/NoteList';
@@ -11,6 +11,7 @@ import { connectionManager } from './lib/supabaseConnection';
 
 export default function App() {
   const { user } = useSupabase();
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   // Initialize connection manager
   useEffect(() => {
@@ -30,14 +31,16 @@ export default function App() {
           {!user ? (
             <LandingPage />
           ) : (
-            <div className="flex h-screen bg-gray-50">
-              <Sidebar />
+            <div className="flex h-screen bg-gray-50 overflow-x-hidden">
+              <div className={`${isCollapsed ? 'w-16' : 'w-64'} flex-shrink-0 h-screen bg-white border-r border-gray-200 transition-all duration-300`}>
+                <Sidebar isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} />
+              </div>
               <div className="flex-1 flex flex-col overflow-hidden">
-                <div className="flex-1 overflow-auto">
+                <div className="flex-1 overflow-y-auto">
                   <NoteList />
                 </div>
-                <div className="hidden sm:block">
-                  <Footer showCredit={false} />
+                <div className={`hidden sm:block fixed bottom-0 right-0 transition-all duration-300 ${isCollapsed ? 'left-16' : 'left-64'} bg-white border-t`}>
+                  <Footer showCredit={false} size="compact" />
                 </div>
               </div>
             </div>

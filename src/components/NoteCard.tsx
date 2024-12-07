@@ -68,7 +68,17 @@ export default function NoteCard({ note, onEdit }: NoteCardProps) {
     >
       <div className="p-4 flex flex-col h-full">
         <div className="flex justify-between items-start mb-2">
-          <h3 className="font-medium text-gray-900 line-clamp-1 flex-1 mr-2">{note.title}</h3>
+          <div className="flex items-start flex-1">
+            {note.is_pinned && (
+              <div className="text-yellow-600 mr-2" title="Pinned">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="12" y1="17" x2="12" y2="22"/>
+                  <path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/>
+                </svg>
+              </div>
+            )}
+            <h3 className="font-medium text-gray-900 line-clamp-1 flex-1 mr-2">{note.title}</h3>
+          </div>
           <div className="relative" ref={menuRef}>
             <button 
               className="p-1 rounded-full hover:bg-gray-100 opacity-0 group-hover:opacity-100 transition-opacity sm:block"
@@ -92,6 +102,20 @@ export default function NoteCard({ note, onEdit }: NoteCardProps) {
                     >
                       <Edit size={16} />
                       <span>Edit</span>
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        updateNote(note.id, { is_pinned: !note.is_pinned });
+                        setShowMenu(false);
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center space-x-2"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="12" y1="17" x2="12" y2="22"/>
+                        <path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/>
+                      </svg>
+                      <span>{note.is_pinned ? 'Unpin' : 'Pin'}</span>
                     </button>
                     <button
                       onClick={handleArchive}
