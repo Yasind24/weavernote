@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { toast } from 'react-hot-toast';
@@ -12,61 +12,33 @@ interface EditProfileDialogProps {
 export function EditProfileDialog({ currentName, onClose, onUpdate }: EditProfileDialogProps) {
   const [name, setName] = useState(currentName);
   const [loading, setLoading] = useState(false);
-  const timeoutRef = useRef<NodeJS.Timeout>();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (loading) return; // Prevent multiple submissions
+    if (loading) return;
     setLoading(true);
 
     try {
-      // Set up timeout
-      const timeoutPromise = new Promise((_, reject) => {
-        timeoutRef.current = setTimeout(() => {
-          reject(new Error('Request timed out'));
-        }, 10000);
+      // Update the user metadata
+      const { data: metaData, error: metaError } = await supabase.auth.updateUser({
+        data: { 
+          full_name: name.trim()
+        }
       });
 
-      // Make the update request
-      const updatePromise = supabase.auth.updateUser({
-        data: { full_name: name.trim() }
-      });
+      if (metaError) throw metaError;
+      if (!metaData?.user) throw new Error('Failed to update profile');
 
-      // Race between the update request and timeout
-      const result = await Promise.race([updatePromise, timeoutPromise]);
-      
-      // Clear timeout if update was successful
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-
-      // Check for errors
-      const { error } = result as any;
-      if (error) throw error;
-
-      // Success case
-      onUpdate();
+      // Success case - let parent handle the success toast
+      await onUpdate();
       onClose();
     } catch (error: any) {
       console.error('Error updating profile:', error);
       toast.error(error.message || 'Failed to update profile');
     } finally {
-      // Clear any remaining timeout
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
       setLoading(false);
     }
   };
-
-  // Clean up timeout on unmount
-  React.useEffect(() => {
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-    };
-  }, []);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={onClose}>

@@ -4,6 +4,7 @@ import useAuthStore from '../store/authStore';
 import useNotebookStore from '../store/notebookStore';
 import useNoteStore from '../store/noteStore';
 import { toast } from 'react-hot-toast';
+import { AuthChangeEvent } from '@supabase/supabase-js';
 
 export function useSupabase() {
   const { user, setUser, initialized } = useAuthStore();
@@ -30,14 +31,15 @@ export function useSupabase() {
   useEffect(() => {
     if (!initialized) return;
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: AuthChangeEvent, session) => {
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
         await handleAuthChange(session);
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
-      } else if (event === 'USER_DELETED') {
-        setUser(null);
-        toast.error('Your account has been deleted');
+      } else if (event === 'USER_UPDATED') {
+        if (session?.user) {
+          setUser(session.user);
+        }
       }
     });
 
