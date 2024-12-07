@@ -102,24 +102,21 @@ export default function NoteEditor({ note, initialNotebookId, onClose }: NoteEdi
       return;
     }
 
+    // If already saving, queue the save with increasing delay
     if (isSaving) {
-      // If already saving, schedule another save attempt
       if (saveTimeoutId) {
         clearTimeout(saveTimeoutId);
       }
-      const timeoutId = setTimeout(handleSave, 1000);
+      const timeoutId = setTimeout(handleSave, 3000); // Increased delay between retries
       setSaveTimeoutId(timeoutId);
       return;
     }
 
     setIsSaving(true);
-    const saveTimeout = setTimeout(() => {
-      setIsSaving(false);
-      toast.error('Save operation timed out. Please try again.');
-    }, 30000); // 30 second timeout
+    let saveTimeout: NodeJS.Timeout | null = null;
 
     try {
-      // Create a draft before saving in case of failure
+      // Create a draft before saving
       const draftData = {
         title: state.title,
         content: state.content,
@@ -128,6 +125,12 @@ export default function NoteEditor({ note, initialNotebookId, onClose }: NoteEdi
         labels: state.labels,
       };
       setDraft(draftData);
+
+      // Set up save timeout
+      saveTimeout = setTimeout(() => {
+        setIsSaving(false);
+        throw new Error('Save operation timed out');
+      }, 15000); // Reduced timeout to 15 seconds
 
       const noteData = {
         title: state.title || 'Untitled',
@@ -154,8 +157,9 @@ export default function NoteEditor({ note, initialNotebookId, onClose }: NoteEdi
         toast.success('Note created successfully');
       }
 
-      // Only clear the draft if save was successful
+      // Clear draft and timeout only if save was successful
       setDraft(null);
+      if (saveTimeout) clearTimeout(saveTimeout);
       onClose();
     } catch (error) {
       console.error('Error saving note:', error);
@@ -173,14 +177,15 @@ export default function NoteEditor({ note, initialNotebookId, onClose }: NoteEdi
         });
       }
 
-      // Schedule a retry
+      // Schedule a retry with exponential backoff
       if (saveTimeoutId) {
         clearTimeout(saveTimeoutId);
       }
-      const timeoutId = setTimeout(handleSave, 2000);
+      const retryDelay = 5000; // Start with 5 seconds delay
+      const timeoutId = setTimeout(handleSave, retryDelay);
       setSaveTimeoutId(timeoutId);
     } finally {
-      clearTimeout(saveTimeout);
+      if (saveTimeout) clearTimeout(saveTimeout);
       setIsSaving(false);
     }
   };

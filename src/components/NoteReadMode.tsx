@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, Edit2, ChevronLeft, ChevronRight, Maximize2, Minimize2 } from 'lucide-react';
 import { formatNoteContent } from '../utils/noteUtils';
-import type { Note } from '../types';
+import type { Note } from '../types/Note';
 
 interface NoteReadModeProps {
   note: Note;
@@ -74,7 +74,7 @@ export function NoteReadMode({ note, onEdit, onClose }: NoteReadModeProps) {
       >
         <div className={`mx-auto ${widthClasses[contentWidth]} transition-all duration-300`}>
           <div 
-            className="prose prose-lg max-w-none bg-white rounded-lg p-8 shadow-sm"
+            className="prose prose-lg max-w-none bg-white rounded-lg p-8 shadow-sm [&_pre]:whitespace-pre-wrap [&_pre]:break-words [&_code]:break-words"
             dangerouslySetInnerHTML={{ __html: formattedContent }}
           />
         </div>

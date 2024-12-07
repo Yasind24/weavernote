@@ -526,7 +526,7 @@ export default function RichTextEditor({ content, onChange, lineWrapping }: Rich
         lowlight,
         exitOnArrowDown: true,
         HTMLAttributes: {
-          class: 'rounded-md bg-gray-50 p-4',
+          class: 'rounded-md bg-gray-50 p-4 whitespace-pre-wrap break-words overflow-x-auto',
         },
       }),
     ],
