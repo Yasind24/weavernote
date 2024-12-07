@@ -14,6 +14,7 @@ interface NotebookStore {
   updateNotebook: (id: string, updates: Partial<Notebook>) => Promise<void>;
   deleteNotebook: (id: string) => Promise<{ success: boolean; error?: string }>;
   hasNotes: (id: string) => Promise<boolean>;
+  moveNotebook: (notebookId: string, newFolderId: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 const useNotebookStore = create<NotebookStore>((set, get) => ({
@@ -31,7 +32,7 @@ const useNotebookStore = create<NotebookStore>((set, get) => ({
 
       if (error) throw error;
       set({ notebooks: data || [], error: null });
-    } catch (error) {
+    } catch (error: any) {
       set({ error: error.message });
     } finally {
       set({ loading: false });
@@ -49,7 +50,7 @@ const useNotebookStore = create<NotebookStore>((set, get) => ({
       if (error) throw error;
       set((state) => ({ notebooks: [data, ...state.notebooks] }));
       return data;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding notebook:', error);
       set({ error: error.message });
       return null;
@@ -71,7 +72,7 @@ const useNotebookStore = create<NotebookStore>((set, get) => ({
           notebook.id === id ? data : notebook
         ),
       }));
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating notebook:', error);
       set({ error: error.message });
     }
@@ -122,10 +123,38 @@ const useNotebookStore = create<NotebookStore>((set, get) => ({
       console.error('Error deleting notebook:', error);
       return {
         success: false,
-        error: error.message
+        error: (error as Error).message
       };
     }
   },
+
+  moveNotebook: async (notebookId: string, newFolderId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('notebooks')
+        .update({ folder_id: newFolderId })
+        .eq('id', notebookId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      set((state) => ({
+        notebooks: state.notebooks.map((notebook) =>
+          notebook.id === notebookId ? data : notebook
+        ),
+      }));
+      
+      return { success: true };
+    } catch (err) {
+      const error = err as Error;
+      console.error('Error moving notebook:', error);
+      return {
+        success: false,
+        error: error?.message || 'An unknown error occurred'
+      };
+    }
+  }
 }));
 
 export default useNotebookStore;

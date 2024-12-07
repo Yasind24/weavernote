@@ -15,8 +15,8 @@ export function CTASection({ onGetStarted }: CTASectionProps) {
               <span className="block text-yellow-500">Start your journey today.</span>
             </h2>
             <p className="mt-4 text-lg text-gray-600 max-w-3xl">
-              Join thousands of users who have transformed their note-taking experience with Quirip. 
-              Your organized, productive future starts here.
+              Be among the first to experience a new way of organizing your thoughts with Weavernote. 
+              Start your journey towards better note-taking today.
             </p>
           </div>
           <div className="flex-shrink-0">
@@ -24,7 +24,7 @@ export function CTASection({ onGetStarted }: CTASectionProps) {
               onClick={onGetStarted}
               className="w-full sm:w-auto px-8 py-4 text-lg font-medium rounded-lg text-white bg-yellow-500 hover:bg-yellow-600 transition-all duration-200 transform hover:scale-105 shadow-lg"
             >
-              Plan, Learn, Achieve
+              Try for free
             </button>
           </div>
         </div>

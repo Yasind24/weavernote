@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Logo } from '../Logo';
 
 interface HeroSectionProps {
@@ -6,8 +6,34 @@ interface HeroSectionProps {
 }
 
 export function HeroSection({ onGetStarted }: HeroSectionProps) {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleModalToggle = () => {
+    setIsModalOpen(!isModalOpen);
+  };
+
   return (
     <div className="relative bg-white overflow-hidden">
+      {/* Modal for video */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="relative w-full max-w-3xl">
+            <button
+              onClick={handleModalToggle}
+              className="absolute top-0 right-0 m-4 text-white"
+            >
+              Close
+            </button>
+            <iframe
+              className="w-full h-64 sm:h-96"
+              src="https://www.youtube.com/embed/YOUR_VIDEO_ID_HERE"
+              title="Weavernote Demo"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          </div>
+        </div>
+      )}
       <div className="max-w-7xl mx-auto">
         <div className="relative z-10 pb-8 sm:pb-16 md:pb-20 lg:pb-28 xl:pb-32 bg-white lg:bg-transparent">
           <div className="pt-6 px-4 sm:px-6 lg:px-8">
@@ -29,22 +55,27 @@ export function HeroSection({ onGetStarted }: HeroSectionProps) {
                     onClick={onGetStarted}
                     className="rounded-md shadow px-8 py-3 text-base font-medium text-white bg-yellow-500 hover:bg-yellow-600 md:py-4 md:text-lg md:px-10 transform transition-all hover:scale-105"
                   >
-                    Plan, Learn, Achieve
+                    Weave your ideas
                   </button>
-                  <a
-                    href="#features"
+                  <button
+                    onClick={handleModalToggle}
                     className="rounded-md px-8 py-3 text-base font-medium text-yellow-600 bg-yellow-50 hover:bg-yellow-100 md:py-4 md:text-lg md:px-10"
                   >
-                    Learn More
-                  </a>
+                    Watch Demo
+                  </button>
                 </div>
               </div>
               <div className="mt-12 lg:mt-0 lg:col-span-6 xl:col-span-7">
-                <div className="relative mx-auto w-full rounded-lg shadow-lg lg:max-w-none">
-                  <img
-                    className="w-full h-64 sm:h-72 md:h-96 lg:h-full object-cover rounded-lg"
-                    src="https://images.unsplash.com/photo-1512314889357-e157c22f938d?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=2071&q=80"
-                    alt="Quirip App Screenshot"
+                <div 
+                  onClick={handleModalToggle}
+                  className="relative mx-auto w-full rounded-lg shadow-lg lg:max-w-none aspect-video cursor-pointer hover:opacity-90 transition-opacity"
+                >
+                  <iframe
+                    className="w-full h-full rounded-lg pointer-events-none"
+                    src="https://www.youtube.com/embed/YOUR_VIDEO_ID_HERE"
+                    title="Weavernote Demo"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
                   />
                 </div>
               </div>

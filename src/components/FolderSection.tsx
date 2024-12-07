@@ -4,7 +4,7 @@ import { FolderMenu } from './FolderMenu';
 import { NotebookMenu } from './NotebookMenu';
 import { ConfirmDialog } from './ConfirmDialog';
 import useSidebarStore from '../store/sidebarStore';
-import type { Folder, Notebook } from '../types';
+import type { Folder, Notebook } from '../types/Note';
 
 interface FolderSectionProps {
   folder: Folder;
@@ -19,6 +19,7 @@ interface FolderSectionProps {
   onDeleteFolder: (folder: Folder) => void;
   onEditNotebook: (notebook: Notebook) => void;
   onDeleteNotebook: (notebook: Notebook) => void;
+  onMoveNotebook: (notebook: Notebook, newFolderId: string) => void;
 }
 
 export function FolderSection({
@@ -34,6 +35,7 @@ export function FolderSection({
   onDeleteFolder,
   onEditNotebook,
   onDeleteNotebook,
+  onMoveNotebook,
 }: FolderSectionProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showDeleteFolderDialog, setShowDeleteFolderDialog] = useState(false);
@@ -127,9 +129,9 @@ export function FolderSection({
         <div className={`mt-1 ${isCollapsed ? '' : 'ml-6'}`}>
           {folderNotebooks.map((notebook) => (
             <div key={notebook.id} className="group">
-              <button
+              <div
                 onClick={() => onSelectCategory(notebook.id)}
-                className={`w-full flex items-center ${
+                className={`w-full flex items-center cursor-pointer ${
                   isCollapsed ? 'justify-center' : 'justify-between'
                 } px-3 py-2 rounded-lg transition-colors ${
                   selectedCategory === notebook.id
@@ -147,10 +149,11 @@ export function FolderSection({
                   <NotebookMenu
                     notebook={notebook}
                     onEdit={onEditNotebook}
-                    onDelete={() => handleDeleteNotebook(notebook)}
+                    onDelete={onDeleteNotebook}
+                    onMove={onMoveNotebook}
                   />
                 )}
-              </button>
+              </div>
             </div>
           ))}
         </div>

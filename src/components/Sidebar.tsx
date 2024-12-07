@@ -12,7 +12,7 @@ import type { Folder, Notebook } from '../types/Note';
 export function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const { user, signOut } = useAuthStore();
-  const { notebooks, fetchNotebooks, addNotebook, updateNotebook, deleteNotebook } = useNotebookStore();
+  const { notebooks, fetchNotebooks, addNotebook, updateNotebook, deleteNotebook, moveNotebook } = useNotebookStore();
   const { folders, fetchFolders, addFolder, updateFolder, deleteFolder } = useFolderStore();
   const { selectedCategory, setSelectedCategory, selectedFolder, setSelectedFolder } = useSidebarStore();
   const { fetchNotes } = useNoteStore();
@@ -116,6 +116,13 @@ export function Sidebar() {
     }
   };
 
+  const handleMoveNotebook = async (notebook: Notebook, newFolderId: string) => {
+    const result = await moveNotebook(notebook.id, newFolderId);
+    if (!result.success) {
+      alert(result.error || 'Failed to move notebook');
+    }
+  };
+
   const categories = [
     { id: 'all', name: 'All Notes', icon: Home },
     { id: 'archive', name: 'Archive', icon: Archive },
@@ -202,6 +209,7 @@ export function Sidebar() {
                   onDeleteFolder={handleDeleteFolder}
                   onEditNotebook={handleEditNotebook}
                   onDeleteNotebook={handleDeleteNotebook}
+                  onMoveNotebook={handleMoveNotebook}
                 />
               ))}
             </div>
