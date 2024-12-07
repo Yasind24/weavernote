@@ -52,7 +52,11 @@ export function FolderMenu({ folder, onEdit, onDelete }: FolderMenuProps) {
         <MoreVertical size={16} />
       </button>
       {showMenu && (
-        <div className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+        <div className="fixed mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1" style={{ 
+          zIndex: 1000,
+          top: menuRef.current ? menuRef.current.getBoundingClientRect().bottom + 5 : 0,
+          left: menuRef.current ? menuRef.current.getBoundingClientRect().left : 0
+        }}>
           <button
             onClick={handleTogglePin}
             className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center space-x-2"

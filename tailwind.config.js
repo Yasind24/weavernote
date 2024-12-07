@@ -166,15 +166,18 @@ module.exports = {
         'ul[data-type="taskList"]': {
           '@apply list-none p-0': {},
           'li': {
-            '@apply flex items-start gap-2 my-2': {},
+            '@apply flex gap-2 my-1': {},
             '> label': {
-              '@apply mt-[5px]': {},
+              '@apply flex items-center': {},
+              'input[type="checkbox"]': {
+                '@apply w-4 h-4 rounded border-gray-300 text-yellow-500 focus:ring-yellow-500': {},
+              },
             },
             '> div': {
-              '@apply flex-1': {},
-            },
-            '> label input[type="checkbox"]': {
-              '@apply w-4 h-4 rounded border-gray-300 text-yellow-500 focus:ring-yellow-500': {},
+              '@apply flex-1 min-w-0': {},
+              'p': {
+                '@apply my-0': {},
+              },
             },
           },
         },

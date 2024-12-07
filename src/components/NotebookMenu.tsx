@@ -41,7 +41,11 @@ export function NotebookMenu({ notebook, onEdit, onDelete, onMove }: NotebookMen
       </div>
 
       {showMenu && !showMoveDialog && (
-        <div className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+        <div className="fixed mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1" style={{ 
+          zIndex: 1000,
+          top: menuRef.current ? menuRef.current.getBoundingClientRect().bottom + 5 : 0,
+          left: menuRef.current ? menuRef.current.getBoundingClientRect().left : 0
+        }}>
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -78,7 +82,11 @@ export function NotebookMenu({ notebook, onEdit, onDelete, onMove }: NotebookMen
       )}
 
       {showMoveDialog && (
-        <div className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+        <div className="fixed mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1" style={{ 
+          zIndex: 1000,
+          top: menuRef.current ? menuRef.current.getBoundingClientRect().bottom + 5 : 0,
+          left: menuRef.current ? menuRef.current.getBoundingClientRect().left : 0
+        }}>
           {folders
             .filter(folder => folder.id !== notebook.folder_id)
             .map(folder => (

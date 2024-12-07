@@ -102,36 +102,14 @@ export default function NoteEditor({ note, initialNotebookId, onClose }: NoteEdi
       return;
     }
 
-    // If already saving, queue the save with increasing delay
+    // If already saving, don't queue another save
     if (isSaving) {
-      if (saveTimeoutId) {
-        clearTimeout(saveTimeoutId);
-      }
-      const timeoutId = setTimeout(handleSave, 3000); // Increased delay between retries
-      setSaveTimeoutId(timeoutId);
       return;
     }
 
     setIsSaving(true);
-    let saveTimeout: NodeJS.Timeout | null = null;
 
     try {
-      // Create a draft before saving
-      const draftData = {
-        title: state.title,
-        content: state.content,
-        notebookId: state.selectedNotebookId,
-        color: state.color,
-        labels: state.labels,
-      };
-      setDraft(draftData);
-
-      // Set up save timeout
-      saveTimeout = setTimeout(() => {
-        setIsSaving(false);
-        throw new Error('Save operation timed out');
-      }, 15000); // Reduced timeout to 15 seconds
-
       const noteData = {
         title: state.title || 'Untitled',
         content: state.content,
@@ -149,22 +127,28 @@ export default function NoteEditor({ note, initialNotebookId, onClose }: NoteEdi
         tags: note?.tags || [],
       };
 
+      // Create a draft before saving
+      const draftData = {
+        title: state.title,
+        content: state.content,
+        notebookId: state.selectedNotebookId,
+        color: state.color,
+        labels: state.labels,
+      };
+      setDraft(draftData);
+
       if (note) {
         await updateNote(note.id, noteData);
-        toast.success('Note updated successfully');
       } else {
         await addNote(noteData);
-        toast.success('Note created successfully');
       }
 
-      // Clear draft and timeout only if save was successful
+      // Clear draft only if save was successful
       setDraft(null);
-      if (saveTimeout) clearTimeout(saveTimeout);
       onClose();
     } catch (error) {
       console.error('Error saving note:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to save note';
-      toast.error(errorMessage);
       
       // Keep the draft in case of error
       if (!note) {
@@ -176,16 +160,7 @@ export default function NoteEditor({ note, initialNotebookId, onClose }: NoteEdi
           labels: state.labels,
         });
       }
-
-      // Schedule a retry with exponential backoff
-      if (saveTimeoutId) {
-        clearTimeout(saveTimeoutId);
-      }
-      const retryDelay = 5000; // Start with 5 seconds delay
-      const timeoutId = setTimeout(handleSave, retryDelay);
-      setSaveTimeoutId(timeoutId);
     } finally {
-      if (saveTimeout) clearTimeout(saveTimeout);
       setIsSaving(false);
     }
   };

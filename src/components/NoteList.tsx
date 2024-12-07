@@ -147,29 +147,29 @@ export function NoteList() {
       <div className="p-4 sm:p-6 border-b">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-6 gap-4">
           <h1 className="text-2xl font-bold text-gray-900">{getCategoryTitle()}</h1>
-          <div className="flex gap-2 w-full sm:w-auto">
+          <div className="flex flex-wrap gap-2 w-full sm:w-auto">
             {selectedCategory !== 'trash' && selectedCategory !== 'archive' && (
               <>
                 <button
                   onClick={() => setShowAIStudio(true)}
-                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 flex items-center space-x-2"
+                  className="flex-1 sm:flex-none px-3 sm:px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 flex items-center justify-center space-x-2 min-w-[100px]"
                 >
                   <Sparkles size={20} />
-                  <span>AI Studio</span>
+                  <span className="whitespace-nowrap">AI Studio</span>
                 </button>
                 <button
                   onClick={() => setShowVisualizer(true)}
-                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 flex items-center space-x-2"
+                  className="flex-1 sm:flex-none px-3 sm:px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 flex items-center justify-center space-x-2 min-w-[100px]"
                 >
                   <Network size={20} />
-                  <span>Visualize</span>
+                  <span className="whitespace-nowrap">Visualize</span>
                 </button>
                 <button
                   onClick={handleNewNote}
-                  className="w-full sm:w-auto px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 flex items-center justify-center space-x-2"
+                  className="flex-1 sm:flex-none px-3 sm:px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 flex items-center justify-center space-x-2 min-w-[100px]"
                 >
                   <Plus size={20} />
-                  <span>New Note</span>
+                  <span className="whitespace-nowrap">New Note</span>
                 </button>
               </>
             )}
