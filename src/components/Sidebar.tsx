@@ -8,6 +8,7 @@ import useNoteStore from '../store/noteStore';
 import { FolderSection } from './FolderSection';
 import { Logo } from './Logo';
 import type { Folder, Notebook } from '../types/Note';
+import { toast } from 'react-hot-toast';
 
 export function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -55,13 +56,33 @@ export function Sidebar() {
 
   const handleAddNotebook = async (folderId: string) => {
     const name = prompt('Enter notebook name:');
-    if (name) {
-      await addNotebook({
-        name,
-        user_id: user?.id || '',
+    if (!name?.trim()) {
+      return;
+    }
+
+    if (!user) {
+      toast.error('You must be logged in to create a notebook');
+      return;
+    }
+
+    try {
+      const notebook = await addNotebook({
+        name: name.trim(),
+        user_id: user.id,
         color: '#ffffff',
         folder_id: folderId,
       });
+
+      if (!notebook) {
+        throw new Error('Failed to create notebook');
+      }
+
+      toast.success('Notebook created successfully');
+      setSelectedCategory(notebook.id);
+      setSelectedFolder(null);
+    } catch (error) {
+      console.error('Error creating notebook:', error);
+      toast.error('Failed to create notebook');
     }
   };
 
