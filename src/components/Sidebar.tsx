@@ -196,16 +196,28 @@ export function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
     { id: 'trash', name: 'Trash', icon: Trash2 },
   ];
 
+  const toggleCollapse = () => {
+    setIsCollapsed(!isCollapsed);
+  };
+
   return (
-    <div className={`${isCollapsed ? 'w-16' : 'w-64'} bg-white border-r border-gray-200 flex flex-col h-full transition-all duration-300 relative flex-shrink-0 overflow-x-hidden`}>
+    <div className={`relative flex flex-col h-full bg-gray-50 dark:bg-gray-900 border-r border-gray-200
+      ${isCollapsed ? 'w-16' : 'w-64'} transition-all duration-300`}>
+      
       <button
-        onClick={() => setIsCollapsed(!isCollapsed)}
-        className="absolute -right-3 top-8 bg-white border border-gray-200 rounded-full p-1 shadow-sm z-50 hover:bg-gray-50"
+        onClick={toggleCollapse}
+        className="absolute -right-3 top-4 z-10 p-1 bg-gray-200 dark:bg-gray-700 
+          rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+        aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
       >
-        {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+        {isCollapsed ? (
+          <ChevronRight className="h-4 w-4" />
+        ) : (
+          <ChevronLeft className="h-4 w-4" />
+        )}
       </button>
 
-      <div className="flex-shrink-0 p-4 border-b border-gray-200 w-full overflow-x-hidden">
+      <div className={`flex-shrink-0 ${isCollapsed ? 'p-2' : 'p-4'} border-b border-gray-200 w-full overflow-x-hidden`}>
         <Logo 
           size={isCollapsed ? "small" : "medium"} 
           className={`${isCollapsed ? 'justify-center' : ''}`}
@@ -224,7 +236,7 @@ export function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
         )}
       </div>
 
-      <div className="flex-shrink-0 p-4 w-full overflow-x-hidden">
+      <div className={`flex-shrink-0 ${isCollapsed ? 'p-2' : 'p-4'} w-full overflow-x-hidden`}>
         <div className="space-y-1">
           {categories.map((category) => {
             const Icon = category.icon;
@@ -236,14 +248,14 @@ export function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
                   setSelectedFolder(null);
                 }}
                 className={`w-full flex items-center ${
-                  isCollapsed ? 'justify-center' : 'space-x-3'
-                } px-3 py-2 rounded-lg transition-colors ${
+                  isCollapsed ? 'justify-center p-2' : 'space-x-3 px-3 py-2'
+                } rounded-lg transition-colors ${
                   selectedCategory === category.id && !selectedFolder
                     ? 'bg-yellow-100 text-yellow-800'
                     : 'text-gray-700 hover:bg-gray-100'
                 }`}
               >
-                <Icon size={20} className="flex-shrink-0" />
+                <Icon size={isCollapsed ? 18 : 20} className="flex-shrink-0" />
                 {!isCollapsed && <span className="truncate">{category.name}</span>}
               </button>
             );

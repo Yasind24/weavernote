@@ -9,7 +9,7 @@ interface AnalysisTypeSelectorProps {
 export function AnalysisTypeSelector({ analysisType, onTypeSelect }: AnalysisTypeSelectorProps) {
   return (
     <div className="border-t pt-8">
-      <h2 className="text-lg font-semibold mb-4">Choose Analysis Type</h2>
+      <h2 className="text-lg font-semibold mb-4">What do you want to weave?</h2>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <button
           onClick={() => onTypeSelect('summary')}

@@ -7,7 +7,7 @@ import useNoteStore from '../store/noteStore';
 import useNotebookStore from '../store/notebookStore';
 import useFolderStore from '../store/folderStore';
 import useSidebarStore from '../store/sidebarStore';
-import type { Note } from '../types';
+import type { Note } from '../types/Note';
 
 interface NoteVisualizerProps {
   onNoteSelect: (noteId: string) => void;
