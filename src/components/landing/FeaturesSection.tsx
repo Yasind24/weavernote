@@ -5,7 +5,7 @@ import { FolderTree, Network, Bot, Layout, Zap, Shield } from 'lucide-react';
 import foldersStructure from '../../../media/OrganizeBetter.png';
 import visualCanvas from '../../../media/Visualizer.png';
 import aiFeatures from '../../../media/AI studio.png';
-import smartSearch from '../../../media/search and tag.png';
+import smartSearch from '../../../media/Search and tag.png';
 import distractionFree from '../../../media/Distraction free.png';
 import customization from '../../../media/Customize.png';
 
