@@ -26,7 +26,7 @@ export function HeroSection({ onGetStarted }: HeroSectionProps) {
             </button>
             <iframe
               className="w-full h-64 sm:h-96"
-              src="https://www.youtube.com/embed/YOUR_VIDEO_ID_HERE"
+              src="https://www.youtube.com/embed/l8sZZMA2D5U"
               title="Weavernote Demo"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
@@ -48,7 +48,7 @@ export function HeroSection({ onGetStarted }: HeroSectionProps) {
                   <span className="block text-yellow-500">organized brilliance</span>
                 </h1>
                 <p className="mt-3 text-base text-gray-500 sm:mt-5 sm:text-lg sm:max-w-xl sm:mx-auto md:mt-5 md:text-xl lg:mx-0">
-                  Capture, organize, and bring your ideas to life with Weavernote. The modern note-taking app designed for the way your mind works.
+                  Capture, organize, and bring your ideas to life with Weavernote. With AI Studio, turn your notes into insights that inspire action
                 </p>
                 <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                   <button
@@ -72,7 +72,7 @@ export function HeroSection({ onGetStarted }: HeroSectionProps) {
                 >
                   <iframe
                     className="w-full h-full rounded-lg pointer-events-none"
-                    src="https://www.youtube.com/embed/YOUR_VIDEO_ID_HERE"
+                    src="https://www.youtube.com/embed/l8sZZMA2D5U"
                     title="Weavernote Demo"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen

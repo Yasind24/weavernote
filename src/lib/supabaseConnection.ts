@@ -1,13 +1,14 @@
 import { supabase } from './supabase';
-import { toast } from 'react-hot-toast';
+import type { RealtimeChannel } from '@supabase/supabase-js';
 
 class SupabaseConnectionManager {
   private static instance: SupabaseConnectionManager;
-  private reconnectTimeout: number | null = null;
-  private isReconnecting = false;
+  private reconnectTimeout: NodeJS.Timeout | null = null;
+  private channel: RealtimeChannel | null = null;
+  private isReconnecting: boolean = false;
 
   private constructor() {
-    this.setupConnectionListeners();
+    this.setupConnectionHandling();
   }
 
   public static getInstance(): SupabaseConnectionManager {
@@ -17,55 +18,43 @@ class SupabaseConnectionManager {
     return SupabaseConnectionManager.instance;
   }
 
-  private setupConnectionListeners() {
-    // Listen for visibility changes
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') {
-        this.handleVisibilityChange();
-      }
-    });
-
-    // Listen for online/offline events
-    window.addEventListener('online', () => this.handleOnline());
-    window.addEventListener('offline', () => this.handleOffline());
-
-    // Setup Supabase realtime presence
-    const channel = supabase.channel('system');
-    channel
-      .on('presence', { event: 'sync' }, () => {
-        console.log('Realtime connection synced');
-      })
-      .on('presence', { event: 'join' }, () => {
-        console.log('Realtime connection joined');
-      })
-      .on('presence', { event: 'leave' }, () => {
-        console.log('Realtime connection left');
-        this.scheduleReconnect();
-      })
-      .subscribe(async (status) => {
+  private setupConnectionHandling() {
+    // Create a channel for connection monitoring
+    this.channel = supabase.channel('connection-monitor')
+      .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
-          const presenceTrackStatus = await channel.track({
-            online_at: new Date().toISOString(),
-          });
-          console.log('Presence track status:', presenceTrackStatus);
+          console.log('Realtime connection established');
+          if (this.reconnectTimeout) {
+            clearTimeout(this.reconnectTimeout);
+            this.reconnectTimeout = null;
+          }
+          this.isReconnecting = false;
+        } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+          console.log('Realtime connection lost');
+          if (!this.isReconnecting) {
+            this.scheduleReconnect();
+          }
         }
       });
+
+    // Handle browser visibility changes
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', () => {
+        this.handleVisibilityChange();
+      });
+    }
   }
 
   private async handleVisibilityChange() {
     if (document.visibilityState === 'visible') {
-      await this.refreshConnection();
+      console.log('Tab became visible, checking connection');
+      const isConnected = await this.checkConnection();
+      
+      if (!isConnected) {
+        console.log('Connection lost during tab switch, reconnecting...');
+        await this.reconnect();
+      }
     }
-  }
-
-  private async handleOnline() {
-    toast.success('Connection restored');
-    await this.refreshConnection();
-  }
-
-  private handleOffline() {
-    toast.error('Connection lost');
-    this.scheduleReconnect();
   }
 
   private scheduleReconnect() {
@@ -73,44 +62,92 @@ class SupabaseConnectionManager {
       clearTimeout(this.reconnectTimeout);
     }
 
-    this.reconnectTimeout = window.setTimeout(() => {
-      this.refreshConnection();
-    }, 1000) as unknown as number;
+    this.reconnectTimeout = setTimeout(() => {
+      this.reconnect();
+    }, 500); // Reduced to 500ms for faster reconnection
   }
 
-  private async refreshConnection() {
+  private async reconnect() {
     if (this.isReconnecting) return;
+    
     this.isReconnecting = true;
-
+    console.log('Attempting to reconnect...');
+    
     try {
-      const { data: { session }, error } = await supabase.auth.getSession();
+      // Force disconnect all existing connections
+      await supabase.realtime.disconnect();
       
+      // Clean up existing channel
+      if (this.channel) {
+        await this.channel.unsubscribe();
+        this.channel = null;
+      }
+
+      // Wait a bit before reconnecting
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Reconnect realtime client
+      await supabase.realtime.connect();
+
+      // Setup new connection monitoring
+      this.setupConnectionHandling();
+
+      // Verify connection with a test query
+      const { error } = await supabase.from('notes').select('id').limit(1);
       if (error) {
-        console.error('Session refresh error:', error);
-        toast.error('Failed to restore connection');
-        return;
+        throw error;
       }
 
-      if (!session) {
-        console.warn('No session found during refresh');
-        return;
-      }
-
-      // Refresh the access token
-      const { error: refreshError } = await supabase.auth.refreshSession();
-      if (refreshError) {
-        console.error('Token refresh error:', refreshError);
-        toast.error('Failed to refresh session');
-        return;
-      }
-
-    } catch (error) {
-      console.error('Connection refresh error:', error);
-      toast.error('Failed to restore connection');
-    } finally {
+      console.log('Reconnection successful');
       this.isReconnecting = false;
+    } catch (error) {
+      console.error('Error reconnecting:', error);
+      this.isReconnecting = false;
+      this.scheduleReconnect();
     }
+  }
+
+  public async checkConnection(): Promise<boolean> {
+    try {
+      console.log('Checking connection status...');
+      
+      // First check if realtime is connected
+      if (!supabase.realtime.isConnected()) {
+        console.log('Realtime not connected, attempting reconnect');
+        await this.reconnect();
+      }
+
+      // Verify with a test query
+      const { error } = await supabase.from('notes').select('id').limit(1);
+      if (error) {
+        console.log('Connection check failed, attempting reconnect');
+        await this.reconnect();
+        return false;
+      }
+
+      console.log('Connection check successful');
+      return true;
+    } catch (error) {
+      console.error('Error checking connection:', error);
+      await this.reconnect();
+      return false;
+    }
+  }
+
+  public cleanup() {
+    if (this.channel) {
+      this.channel.unsubscribe();
+      this.channel = null;
+    }
+    if (this.reconnectTimeout) {
+      clearTimeout(this.reconnectTimeout);
+      this.reconnectTimeout = null;
+    }
+    this.isReconnecting = false;
   }
 }
 
-export const connectionManager = SupabaseConnectionManager.getInstance();
+// Initialize the connection manager
+const connectionManager = SupabaseConnectionManager.getInstance();
+
+export { connectionManager };

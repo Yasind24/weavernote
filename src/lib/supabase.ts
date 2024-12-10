@@ -5,70 +5,65 @@ import { toast } from 'react-hot-toast';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// Validate URL format
-if (!supabaseUrl || !supabaseUrl.startsWith('https://')) {
-  console.error('Invalid Supabase URL. Must be a valid HTTPS URL:', supabaseUrl);
-  throw new Error('Invalid Supabase URL configuration');
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('Missing Supabase environment variables');
 }
 
-if (!supabaseAnonKey) {
-  console.error('Missing Supabase Anon Key');
-  throw new Error('Missing Supabase configuration');
-}
-
-export const supabase = createClient<Database>(
-  supabaseUrl,
-  supabaseAnonKey,
-  {
-    auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-      detectSessionInUrl: true,
-      storage: localStorage,
-    },
-    realtime: {
-      params: {
-        eventsPerSecond: 10,
-      },
-    },
-  }
-);
-
-export async function fetchWithRetry<T>(
-  operation: () => Promise<T>,
-  maxRetries = 3,
-  baseDelay = 1000
-): Promise<T> {
-  let lastError: Error | null = null;
-  let attempt = 0;
-
-  while (attempt < maxRetries) {
-    try {
-      // Check session before each attempt
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        throw new Error('No active session');
-      }
-
-      return await operation();
-    } catch (error) {
-      lastError = error as Error;
-      console.warn(`Attempt ${attempt + 1} failed:`, error);
-      
-      if (error instanceof Error && error.message === 'No active session') {
-        toast.error('Session expired. Please refresh the page.');
-        break;
-      }
-      
-      if (attempt < maxRetries - 1) {
-        const delay = baseDelay * Math.pow(2, attempt) + Math.random() * 1000;
-        await new Promise(resolve => setTimeout(resolve, delay));
-      }
-      attempt++;
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    storage: localStorage,
+  },
+  realtime: {
+    params: {
+      eventsPerSecond: 10
+    }
+  },
+  db: {
+    schema: 'public'
+  },
+  global: {
+    fetch: (url, options = {}) => {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+      return fetch(url, {
+        ...options,
+        signal: controller.signal
+      }).finally(() => clearTimeout(timeoutId));
     }
   }
+});
 
-  throw lastError || new Error('Operation failed after retries');
+// Initialize realtime connection
+supabase.realtime.connect();
+
+// Handle visibility change
+if (typeof document !== 'undefined') {
+  let reconnectTimeout: NodeJS.Timeout | null = null;
+  
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      // Clear any pending reconnect
+      if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout);
+        reconnectTimeout = null;
+      }
+      
+      // Only reconnect if not already connected
+      if (!supabase.realtime.isConnected()) {
+        supabase.realtime.connect();
+      }
+    } else {
+      // Schedule a reconnect when tab becomes visible again
+      reconnectTimeout = setTimeout(() => {
+        if (document.visibilityState === 'visible') {
+          supabase.realtime.connect();
+        }
+      }, 1000);
+    }
+  });
 }
 
 export async function uploadImage(file: File, userId: string): Promise<string | null> {
@@ -95,24 +90,109 @@ export async function uploadImage(file: File, userId: string): Promise<string | 
   }
 }
 
-// Connection status monitoring
-let isOffline = false;
+// Save queue implementation
+interface SaveOperation<T> {
+  operation: () => Promise<T>;
+  resolve: (value: T) => void;
+  reject: (error: Error) => void;
+}
 
-window.addEventListener('online', () => {
-  isOffline = false;
-  console.log('Connection restored');
-  toast.success('Connection restored');
-});
+class SaveQueue {
+  private queue: SaveOperation<any>[] = [];
+  private processing = false;
+  private saveKey = 'weavernote_save_queue';
 
-window.addEventListener('offline', () => {
-  isOffline = true;
-  console.log('Connection lost');
-  toast.error('Connection lost');
-});
+  constructor() {
+    // Try to restore pending operations on init
+    this.restoreQueue();
+    window.addEventListener('beforeunload', () => this.persistQueue());
+  }
 
-// Helper to check connection before operations
-export function checkConnection() {
-  if (isOffline) {
-    throw new Error('No internet connection');
+  private async processQueue() {
+    if (this.processing || this.queue.length === 0) return;
+    
+    this.processing = true;
+    console.log(`Processing save queue (${this.queue.length} items)`);
+
+    while (this.queue.length > 0) {
+      const operation = this.queue[0];
+      try {
+        const result = await operation.operation();
+        operation.resolve(result);
+      } catch (error) {
+        console.error('Error processing save operation:', error);
+        operation.reject(error instanceof Error ? error : new Error('Save failed'));
+      } finally {
+        this.queue.shift();
+        this.persistQueue();
+      }
+    }
+
+    this.processing = false;
+  }
+
+  private persistQueue() {
+    // Only persist the operations, not the promises
+    const serializedQueue = this.queue.map(() => ({
+      type: 'save_operation',
+      timestamp: Date.now()
+    }));
+    localStorage.setItem(this.saveKey, JSON.stringify(serializedQueue));
+  }
+
+  private restoreQueue() {
+    try {
+      const saved = localStorage.getItem(this.saveKey);
+      if (saved) {
+        localStorage.removeItem(this.saveKey);
+      }
+    } catch (error) {
+      console.error('Error restoring save queue:', error);
+    }
+  }
+
+  add<T>(operation: () => Promise<T>): Promise<T> {
+    return new Promise((resolve, reject) => {
+      this.queue.push({ operation, resolve, reject });
+      this.persistQueue();
+      this.processQueue();
+    });
   }
 }
+
+export const saveNote = async <T>(operation: () => Promise<T>): Promise<T> => {
+  const saveQueue = new SaveQueue();
+  const MAX_SAVE_TIME = 8000; // 8 seconds max for save operation
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), MAX_SAVE_TIME);
+
+  try {
+    // Attempt the save operation with timeout
+    const result = await Promise.race([
+      operation(),
+      new Promise<never>((_, reject) => {
+        setTimeout(() => {
+          reject(new Error('Save operation timed out - please try again'));
+        }, MAX_SAVE_TIME);
+      })
+    ]);
+
+    return result;
+  } catch (error) {
+    // Force disconnect and reconnect on failure
+    try {
+      await supabase.realtime.disconnect();
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      await supabase.realtime.connect();
+    } catch (reconnectError) {
+      console.error('Failed to reconnect:', reconnectError);
+    }
+
+    const enhancedError = error instanceof Error 
+      ? new Error(`Save operation failed: ${error.message}`)
+      : new Error('Save operation failed with an unknown error');
+    throw enhancedError;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+};

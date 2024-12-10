@@ -2,6 +2,9 @@ import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
 import { toast } from 'react-hot-toast';
 import type { Note } from '../types/Note';
+import type { Database } from '../lib/database.types';
+
+type DBNote = Database['public']['Tables']['notes']['Row'];
 
 interface NoteStore {
   notes: Note[];
@@ -12,7 +15,7 @@ interface NoteStore {
   isEditing: boolean;
   fetchNotes: (notebookId?: string) => Promise<void>;
   addNote: (note: Omit<Note, 'id' | 'created_at' | 'updated_at'>) => Promise<Note>;
-  updateNote: (id: string, updates: Partial<Note>) => Promise<void>;
+  updateNote: (id: string, updates: Partial<Note>) => Promise<Note>;
   deleteNote: (id: string) => Promise<void>;
   removeNotesFromNotebook: (notebookId: string) => void;
   removeNotesFromFolder: (notebookIds: string[]) => void;
@@ -47,7 +50,7 @@ const useNoteStore = create<NoteStore>((set, get) => ({
       const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) throw error;
-      set({ notes: data || [], error: null });
+      set({ notes: (data || []) as Note[], error: null });
     } catch (error) {
       console.error('Error fetching notes:', error);
       const message = error instanceof Error ? error.message : 'Failed to fetch notes';
@@ -58,69 +61,46 @@ const useNoteStore = create<NoteStore>((set, get) => ({
     }
   },
 
-  addNote: async (note) => {
+  addNote: async (noteData) => {
     set({ loading: true, error: null });
-    let retryCount = 0;
-    const maxRetries = 3;
-    const baseDelay = 1000;
-
-    while (retryCount < maxRetries) {
-      try {
-        const { data: sessionData } = await supabase.auth.getSession();
-        if (!sessionData.session) {
-          throw new Error('No active session');
-        }
-
-        const now = new Date().toISOString();
-        const noteData = {
-          ...note,
-          created_at: now,
-          updated_at: now,
-          labels: note.labels || [],
-          tags: note.tags || []
-        };
-
-        const { data, error } = await supabase
-          .from('notes')
-          .insert([noteData])
-          .select()
-          .single();
-
-        if (error) {
-          if (error.code === 'PGRST116' || error.message.includes('JWT')) {
-            await supabase.auth.refreshSession();
-            retryCount++;
-            await new Promise(resolve => setTimeout(resolve, baseDelay * retryCount));
-            continue;
-          }
-          throw error;
-        }
-        
-        if (!data) throw new Error('Failed to create note');
-
-        const newNote = data as Note;
-        set(state => ({
-          notes: [newNote, ...state.notes],
-          loading: false,
-          error: null
-        }));
-
-        toast.success('Note created successfully');
-        return newNote;
-      } catch (error) {
-        const message = error instanceof Error ? error.message : 'Failed to create note';
-        if (retryCount === maxRetries - 1) {
-          set({ error: message, loading: false });
-          toast.error(message);
-          throw error;
-        }
-        console.warn(`Retry ${retryCount + 1}/${maxRetries}: ${message}`);
-        retryCount++;
-        await new Promise(resolve => setTimeout(resolve, baseDelay * retryCount));
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        throw new Error('No active session');
       }
+
+      const now = new Date().toISOString();
+      const insertData = {
+        ...noteData,
+        created_at: now,
+        updated_at: now,
+        labels: noteData.labels || [],
+        tags: noteData.tags || []
+      } as DBNote;
+
+      const { data, error } = await supabase
+        .from('notes')
+        .insert([insertData])
+        .select()
+        .single();
+
+      if (error) throw error;
+      if (!data) throw new Error('Failed to create note');
+
+      const newNote = data as Note;
+      set(state => ({
+        notes: [newNote, ...state.notes],
+        loading: false,
+        error: null
+      }));
+
+      return newNote;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to create note';
+      set({ error: message, loading: false });
+      toast.error(message);
+      throw error;
     }
-    set({ loading: false });
-    throw new Error('Failed to create note after retries');
   },
 
   updateNote: async (id, updates) => {
@@ -131,76 +111,49 @@ const useNoteStore = create<NoteStore>((set, get) => ({
       throw new Error('Note not found');
     }
 
-    // Update UI immediately for better responsiveness
-    set(state => ({
-      notes: state.notes.map(note => 
-        note.id === id 
-          ? { ...note, ...updates, updated_at: new Date().toISOString() }
-          : note
-      )
-    }));
+    try {
+      const updateData = {
+        ...updates,
+        updated_at: new Date().toISOString(),
+        labels: updates.labels || previousNote.labels || [],
+        tags: updates.tags || previousNote.tags || []
+      } as DBNote;
 
-    let retryCount = 0;
-    const maxRetries = 3;
-    const baseDelay = 1000;
+      // First update without returning data
+      const { error: updateError } = await supabase
+        .from('notes')
+        .update(updateData)
+        .eq('id', id);
 
-    while (retryCount < maxRetries) {
-      try {
-        const { data: sessionData } = await supabase.auth.getSession();
-        if (!sessionData.session) {
-          throw new Error('No active session');
-        }
+      if (updateError) throw updateError;
 
-        const { data, error } = await supabase
-          .from('notes')
-          .update({
-            ...updates,
-            updated_at: new Date().toISOString(),
-            labels: updates.labels || [],
-            tags: updates.tags || []
-          })
-          .eq('id', id)
-          .select()
-          .single();
+      // Then fetch the updated note separately
+      const { data: fetchedNote, error: fetchError } = await supabase
+        .from('notes')
+        .select('*')
+        .eq('id', id)
+        .single();
 
-        if (error) {
-          if (error.code === 'PGRST116' || error.message.includes('JWT')) {
-            await supabase.auth.refreshSession();
-            retryCount++;
-            await new Promise(resolve => setTimeout(resolve, baseDelay * retryCount));
-            continue;
-          }
-          throw error;
-        }
+      if (fetchError) throw fetchError;
+      if (!fetchedNote) throw new Error('Note not found after update');
 
-        if (!data) throw new Error('Note not found');
+      const updatedNote = fetchedNote as Note;
+      set(state => ({
+        notes: state.notes.map(note => note.id === id ? updatedNote : note),
+        loading: false,
+        error: null
+      }));
 
-        set(state => ({
-          notes: state.notes.map(note => note.id === id ? (data as Note) : note),
-          loading: false,
-          error: null
-        }));
-        toast.success('Note updated successfully');
-        return;
-      } catch (error) {
-        const message = error instanceof Error ? error.message : 'Failed to update note';
-        if (retryCount === maxRetries - 1) {
-          // Revert the optimistic update on final failure
-          set(state => ({ 
-            error: message,
-            loading: false,
-            notes: state.notes.map(note => note.id === id ? previousNote : note)
-          }));
-          toast.error(message);
-          throw error;
-        }
-        console.warn(`Retry ${retryCount + 1}/${maxRetries}: ${message}`);
-        retryCount++;
-        await new Promise(resolve => setTimeout(resolve, baseDelay * retryCount));
-      }
+      return updatedNote;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to update note';
+      set(state => ({ 
+        error: message,
+        loading: false,
+        notes: state.notes.map(note => note.id === id ? previousNote : note)
+      }));
+      throw error;
     }
-    set({ loading: false });
-    throw new Error('Failed to update note after retries');
   },
 
   deleteNote: async (id) => {

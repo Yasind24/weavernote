@@ -1,8 +1,7 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import RichTextEditor from './RichTextEditor';
 import { FolderNotebookSelect } from './FolderNotebookSelect';
 import { NoteConnectionManager } from './NoteConnectionManager';
-import { NoteEnhancer } from './NoteEnhancer';
 import { NoteReadMode } from './NoteReadMode';
 import { EditorHeader } from './editor/EditorHeader';
 import { EditorDialogs } from './editor/EditorDialogs';
@@ -13,6 +12,8 @@ import useSidebarStore from '../store/sidebarStore';
 import type { Note } from '../types/Note';
 import { toast } from 'react-hot-toast';
 import { stripHtml } from 'string-strip-html';
+import { supabase } from '../lib/supabase';
+import type { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 
 interface NoteEditorProps {
   note: Note | null;
@@ -27,15 +28,18 @@ export default function NoteEditor({ note, initialNotebookId, onClose }: NoteEdi
   const { selectedCategory, selectedFolder } = useSidebarStore();
   const [isReadMode, setIsReadMode] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [saveTimeoutId, setSaveTimeoutId] = useState<NodeJS.Timeout | null>(null);
-  
+  const mounted = useRef(true);
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastSaveRef = useRef<string | null>(null);
+  const channelRef = useRef<RealtimeChannel | null>(null);
+
   const [state, setState] = useState({
     title: note?.title || draft?.title || '',
     content: note?.content || draft?.content || '',
     selectedNotebookId: note?.notebook_id || 
-                       (selectedCategory !== 'all' && selectedCategory !== 'archive' && selectedCategory !== 'trash' ? selectedCategory : '') || 
-                       initialNotebookId || 
-                       draft?.notebookId || '',
+                     (selectedCategory !== 'all' && selectedCategory !== 'archive' && selectedCategory !== 'trash' ? selectedCategory : '') || 
+                     initialNotebookId || 
+                     draft?.notebookId || '',
     color: note?.color || draft?.color || '#ffffff',
     labels: note?.labels || draft?.labels || [],
   });
@@ -45,9 +49,9 @@ export default function NoteEditor({ note, initialNotebookId, onClose }: NoteEdi
     labelManager: false
   });
 
-  const updateField = useCallback((field: keyof typeof state, value: any) => {
+  const updateField = (field: keyof typeof state, value: any) => {
     setState(prev => ({ ...prev, [field]: value }));
-  }, []);
+  };
 
   const toggleDialog = (dialog: "colorPicker" | "labelManager") => {
     setDialogs(prev => ({
@@ -69,14 +73,107 @@ export default function NoteEditor({ note, initialNotebookId, onClose }: NoteEdi
     }
   }, [note, draft, setDraft]);
 
+  // Setup real-time subscription for note updates
   useEffect(() => {
-    return () => {
-      if (saveTimeoutId) {
-        clearTimeout(saveTimeoutId);
+    let channel: RealtimeChannel | null = null;
+
+    const setupSubscription = async () => {
+      if (!note?.id || !mounted.current) return;
+
+      // Don't setup new subscription if we're saving
+      if (isSaving) {
+        console.log('Skipping subscription setup during save operation');
+        return;
+      }
+
+      console.log('Setting up real-time subscription for note:', note.id);
+      
+      try {
+        // Only cleanup existing subscription if it's for a different note
+        if (channelRef.current) {
+          const currentChannel = channelRef.current;
+          if (currentChannel.topic === `note-${note.id}`) {
+            console.log('Reusing existing subscription');
+            return;
+          }
+          console.log('Cleaning up note subscription');
+          await channelRef.current.unsubscribe();
+          channelRef.current = null;
+        }
+
+        // Create a new channel
+        channel = supabase.channel(`note-${note.id}`)
+          .on('postgres_changes', 
+            { 
+              event: 'UPDATE', 
+              schema: 'public', 
+              table: 'notes',
+              filter: `id=eq.${note.id}`
+            }, 
+            (payload: RealtimePostgresChangesPayload<Note>) => {
+              console.log('Received real-time update for note:', payload);
+              if (mounted.current && !isSaving) {
+                console.log('Updating note from real-time event');
+                onClose();
+              }
+            }
+          );
+
+        await channel.subscribe();
+        console.log('Successfully subscribed to note updates');
+        channelRef.current = channel;
+      } catch (err) {
+        console.error('Error subscribing to channel:', err);
       }
     };
-  }, [saveTimeoutId]);
 
+    setupSubscription();
+
+    return () => {
+      const cleanup = async () => {
+        // Only cleanup if we're not in the middle of a save
+        if (!isSaving && channel) {
+          console.log('Cleaning up note subscription');
+          await channel.unsubscribe();
+          channel = null;
+        }
+      };
+      cleanup();
+    };
+  }, [note?.id, isSaving, onClose]);
+
+  // Handle visibility change
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && !isSaving) {
+        console.log('Tab became visible, checking subscription');
+        // Only reconnect if we're not currently saving
+        if (channelRef.current) {
+          channelRef.current.subscribe();
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [isSaving]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+        saveTimeoutRef.current = null;
+      }
+      lastSaveRef.current = null;
+    };
+  }, []);
+
+  // Save draft when unmounting if there are unsaved changes
   useEffect(() => {
     return () => {
       if (!note && (state.title || state.content)) {
@@ -102,11 +199,12 @@ export default function NoteEditor({ note, initialNotebookId, onClose }: NoteEdi
       return;
     }
 
-    // If already saving, don't queue another save
     if (isSaving) {
+      console.log('Already saving, skipping save attempt');
       return;
     }
 
+    console.log('Starting save operation');
     setIsSaving(true);
 
     try {
@@ -120,48 +218,47 @@ export default function NoteEditor({ note, initialNotebookId, onClose }: NoteEdi
         is_trashed: note?.is_trashed || false,
         trashed_at: note?.trashed_at || null,
         color: state.color,
-        labels: state.labels,
+        labels: state.labels || [],
         position_x: note?.position_x || null,
         position_y: note?.position_y || null,
         layout_type: note?.layout_type || 'circular',
         tags: note?.tags || [],
+        updated_at: new Date().toISOString()
       };
 
-      // Create a draft before saving
-      const draftData = {
-        title: state.title,
-        content: state.content,
-        notebookId: state.selectedNotebookId,
-        color: state.color,
-        labels: state.labels,
-      };
-      setDraft(draftData);
+      console.log('Attempting to save note:', { id: note?.id, ...noteData });
 
       if (note) {
-        await updateNote(note.id, noteData);
+        // Use Supabase client directly
+        const { data: savedNote, error } = await supabase
+          .from('notes')
+          .update(noteData)
+          .eq('id', note.id)
+          .select()
+          .single();
+
+        if (error) throw error;
+        if (!savedNote) throw new Error('Failed to save note - no data returned');
+
+        console.log('Server response:', savedNote);
+
+        // Update local state
+        await updateNote(note.id, savedNote);
       } else {
         await addNote(noteData);
       }
 
-      // Clear draft only if save was successful
-      setDraft(null);
-      onClose();
+      if (mounted.current) {
+        setIsSaving(false);
+        toast.success('Note saved successfully');
+        onClose();
+      }
     } catch (error) {
       console.error('Error saving note:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to save note';
-      
-      // Keep the draft in case of error
-      if (!note) {
-        setDraft({
-          title: state.title,
-          content: state.content,
-          notebookId: state.selectedNotebookId,
-          color: state.color,
-          labels: state.labels,
-        });
+      if (mounted.current) {
+        setIsSaving(false);
+        toast.error(error instanceof Error ? error.message : 'Failed to save note');
       }
-    } finally {
-      setIsSaving(false);
     }
   };
 
@@ -246,27 +343,6 @@ export default function NoteEditor({ note, initialNotebookId, onClose }: NoteEdi
             <NoteConnectionManager
               currentNote={note}
               onUpdateContent={(content) => updateField('content', content)}
-            />
-            <NoteEnhancer 
-              note={{
-                id: note?.id || '',
-                title: state.title,
-                content: state.content,
-                notebook_id: state.selectedNotebookId,
-                user_id: user?.id || '',
-                is_pinned: note?.is_pinned || false,
-                is_archived: note?.is_archived || false,
-                is_trashed: note?.is_trashed || false,
-                trashed_at: note?.trashed_at || null,
-                color: state.color,
-                labels: state.labels,
-                tags: note?.tags || [],
-                created_at: note?.created_at || new Date().toISOString(),
-                updated_at: new Date().toISOString(),
-                position_x: note?.position_x || null,
-                position_y: note?.position_y || null,
-                layout_type: note?.layout_type || 'circular'
-              }} 
             />
           </div>
         </div>
