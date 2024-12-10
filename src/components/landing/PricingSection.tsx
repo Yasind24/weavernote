@@ -36,7 +36,7 @@ function PricingCard({
         </div>
         <div className="flex items-baseline gap-1">
           <span className="text-4xl font-bold tracking-tight text-gray-900">{price}</span>
-          {!price.includes('year') && !price.includes('Lifetime') && <span className="text-gray-600">/month</span>}
+          {price === '$10' && <span className="text-gray-600">/month</span>}
         </div>
         <p className="mt-2 text-sm text-gray-500">{subtitle}</p>
       </div>
@@ -85,7 +85,7 @@ export function PricingSection({ onGetStarted }: PricingSectionProps) {
             <PricingCard
               title="Exclusive Lifetime Plan"
               price="$100"
-              subtitle="Only 100 spots available!"
+              subtitle="One-time payment - Only 100 spots available!"
               icon="💰"
               buttonText="Get Lifetime Access"
               onGetStarted={onGetStarted}
