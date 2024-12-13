@@ -81,22 +81,15 @@ export default function NoteEditor({ note, initialNotebookId, onClose }: NoteEdi
       if (!note?.id || !mounted.current) return;
 
       // Don't setup new subscription if we're saving
-      if (isSaving) {
-        console.log('Skipping subscription setup during save operation');
-        return;
-      }
-
-      console.log('Setting up real-time subscription for note:', note.id);
+      if (isSaving) return;
       
       try {
         // Only cleanup existing subscription if it's for a different note
         if (channelRef.current) {
           const currentChannel = channelRef.current;
           if (currentChannel.topic === `note-${note.id}`) {
-            console.log('Reusing existing subscription');
             return;
           }
-          console.log('Cleaning up note subscription');
           await channelRef.current.unsubscribe();
           channelRef.current = null;
         }
@@ -111,16 +104,13 @@ export default function NoteEditor({ note, initialNotebookId, onClose }: NoteEdi
               filter: `id=eq.${note.id}`
             }, 
             (payload: RealtimePostgresChangesPayload<Note>) => {
-              console.log('Received real-time update for note:', payload);
               if (mounted.current && !isSaving) {
-                console.log('Updating note from real-time event');
                 onClose();
               }
             }
           );
 
         await channel.subscribe();
-        console.log('Successfully subscribed to note updates');
         channelRef.current = channel;
       } catch (err) {
         console.error('Error subscribing to channel:', err);
@@ -146,9 +136,7 @@ export default function NoteEditor({ note, initialNotebookId, onClose }: NoteEdi
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible' && !isSaving) {
-        console.log('Tab became visible, checking subscription');
-        // Only reconnect if we're not currently saving
-        if (channelRef.current) {
+        if (channelRef.current && channelRef.current.state !== 'joined') {
           channelRef.current.subscribe();
         }
       }
@@ -200,11 +188,9 @@ export default function NoteEditor({ note, initialNotebookId, onClose }: NoteEdi
     }
 
     if (isSaving) {
-      console.log('Already saving, skipping save attempt');
       return;
     }
 
-    console.log('Starting save operation');
     setIsSaving(true);
 
     try {
@@ -226,10 +212,7 @@ export default function NoteEditor({ note, initialNotebookId, onClose }: NoteEdi
         updated_at: new Date().toISOString()
       };
 
-      console.log('Attempting to save note:', { id: note?.id, ...noteData });
-
       if (note) {
-        // Use Supabase client directly
         const { data: savedNote, error } = await supabase
           .from('notes')
           .update(noteData)
@@ -240,9 +223,6 @@ export default function NoteEditor({ note, initialNotebookId, onClose }: NoteEdi
         if (error) throw error;
         if (!savedNote) throw new Error('Failed to save note - no data returned');
 
-        console.log('Server response:', savedNote);
-
-        // Update local state
         await updateNote(note.id, savedNote);
       } else {
         await addNote(noteData);

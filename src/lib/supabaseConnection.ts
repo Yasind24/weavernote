@@ -47,11 +47,9 @@ class SupabaseConnectionManager {
 
   private async handleVisibilityChange() {
     if (document.visibilityState === 'visible') {
-      console.log('Tab became visible, checking connection');
       const isConnected = await this.checkConnection();
       
       if (!isConnected) {
-        console.log('Connection lost during tab switch, reconnecting...');
         await this.reconnect();
       }
     }
@@ -71,7 +69,6 @@ class SupabaseConnectionManager {
     if (this.isReconnecting) return;
     
     this.isReconnecting = true;
-    console.log('Attempting to reconnect...');
     
     try {
       // Force disconnect all existing connections
@@ -98,7 +95,6 @@ class SupabaseConnectionManager {
         throw error;
       }
 
-      console.log('Reconnection successful');
       this.isReconnecting = false;
     } catch (error) {
       console.error('Error reconnecting:', error);
@@ -109,23 +105,22 @@ class SupabaseConnectionManager {
 
   public async checkConnection(): Promise<boolean> {
     try {
-      console.log('Checking connection status...');
-      
       // First check if realtime is connected
       if (!supabase.realtime.isConnected()) {
-        console.log('Realtime not connected, attempting reconnect');
         await this.reconnect();
       }
 
       // Verify with a test query
       const { error } = await supabase.from('notes').select('id').limit(1);
-      if (error) {
-        console.log('Connection check failed, attempting reconnect');
+      
+      // Also verify auth session
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (error || !session) {
         await this.reconnect();
         return false;
       }
 
-      console.log('Connection check successful');
       return true;
     } catch (error) {
       console.error('Error checking connection:', error);

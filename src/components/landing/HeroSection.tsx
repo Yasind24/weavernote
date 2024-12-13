@@ -3,13 +3,18 @@ import { Logo } from '../Logo';
 
 interface HeroSectionProps {
   onGetStarted: () => void;
+  pricingRef: React.RefObject<HTMLDivElement>;
 }
-
-export function HeroSection({ onGetStarted }: HeroSectionProps) {
+  
+export function HeroSection({ onGetStarted, pricingRef }: HeroSectionProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleModalToggle = () => {
     setIsModalOpen(!isModalOpen);
+  };
+
+  const scrollToPricing = () => {
+    pricingRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   return (
@@ -52,7 +57,7 @@ export function HeroSection({ onGetStarted }: HeroSectionProps) {
                 </p>
                 <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                   <button
-                    onClick={onGetStarted}
+                    onClick={scrollToPricing}
                     className="rounded-md shadow px-8 py-3 text-base font-medium text-white bg-yellow-500 hover:bg-yellow-600 md:py-4 md:text-lg md:px-10 transform transition-all hover:scale-105"
                   >
                     Weave your ideas

@@ -15,10 +15,12 @@ export function useSupabase() {
     if (session?.user) {
       setUser(session.user);
       try {
-        await Promise.all([
-          fetchNotebooks(),
-          fetchNotes()
-        ]);
+        setTimeout(async () => {
+          await Promise.all([
+            fetchNotebooks(),
+            fetchNotes()
+          ]);
+        }, 0);
       } catch (error) {
         console.error('Error fetching data:', error);
         toast.error('Failed to load your data');

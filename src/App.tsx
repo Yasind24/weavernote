@@ -15,8 +15,15 @@ export default function App() {
 
   // Initialize connection manager
   useEffect(() => {
-    // Just accessing the connection manager is enough to initialize it
-    connectionManager;
+    // Initialize connection manager
+    const manager = connectionManager;
+    
+    // Check connection when component mounts
+    manager.checkConnection();
+
+    return () => {
+      manager.cleanup();
+    };
   }, []);
 
   return (
