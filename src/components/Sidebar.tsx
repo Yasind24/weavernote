@@ -38,14 +38,14 @@ export function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
     }
   }, [selectedCategory, fetchNotes]);
 
-  const handleSignOut = async () => {
+  const handleSignOut = async (e: React.MouseEvent) => {
     try {
-      // Cleanup any active subscriptions by disconnecting realtime
-      await supabase.realtime.disconnect();
+      // Prevent any default behavior
+      e.preventDefault();
+      e.stopPropagation();
       
+      // Call signOut which will handle cleanup and navigation
       await signOut();
-      setSelectedCategory('all');
-      setSelectedFolder(null);
     } catch (error) {
       console.error('Error signing out:', error);
       toast.error('Failed to sign out');

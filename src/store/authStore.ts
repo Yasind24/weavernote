@@ -31,22 +31,35 @@ const useAuthStore = create<AuthState>()(
           
           // Clear all local storage auth data
           const prefix = 'sb-' + import.meta.env.VITE_SUPABASE_PROJECT_REF;
-          localStorage.removeItem(`${prefix}-auth-token`);
-          localStorage.removeItem('auth-storage');
+          for (const key of Object.keys(localStorage)) {
+            if (key.startsWith(prefix) || key === 'auth-storage') {
+              localStorage.removeItem(key);
+            }
+          }
           
-          // Then sign out
-          await supabase.auth.signOut();
+          // Clear session storage as well
+          sessionStorage.clear();
+          
+          try {
+            // Sign out from Supabase with global scope
+            await supabase.auth.signOut({ scope: 'global' });
+          } catch (error) {
+            console.log('Auth session already cleared');
+          }
           
           // Clear local state
           set({ user: null, error: null, initialized: false });
           
-          // Navigate to landing page
-          window.location.href = '/';
+          // Force a complete navigation to root
+          const baseUrl = window.location.origin;
+          window.location.assign(baseUrl);
+          
         } catch (error) {
           console.error('Error signing out:', error);
           // Still clear local state even if API call fails
           set({ user: null, error: null, initialized: false });
-          window.location.href = '/';
+          // Force navigation even on error
+          window.location.assign(window.location.origin);
         }
       },
 
