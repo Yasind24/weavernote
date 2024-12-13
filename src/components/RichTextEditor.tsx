@@ -8,6 +8,7 @@ import TaskList from '@tiptap/extension-task-list';
 import TaskItem from '@tiptap/extension-task-item';
 import Underline from '@tiptap/extension-underline';
 import Image from '@tiptap/extension-image';
+import Link from '@tiptap/extension-link';
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
 import Table from '@tiptap/extension-table';
 import TableRow from '@tiptap/extension-table-row';
@@ -18,6 +19,8 @@ import { uploadImage } from '../lib/supabase';
 import useAuthStore from '../store/authStore';
 import { parseNoteReference, removeNoteReference } from '../utils/noteUtils';
 import { NoteReference } from './NoteReference';
+import { Portal } from '@headlessui/react';
+import { toast } from 'react-hot-toast';
 import {
   Bold,
   Italic,
@@ -40,12 +43,10 @@ import {
   Plus,
   Minus,
   Trash,
+  Link as LinkIcon,
 } from 'lucide-react';
 import CodeSnippetDialog from './editor/CodeSnippetDialog';
 import TableDialog from './editor/TableDialog';
-import { createPortal } from 'react-dom';
-import { Portal } from '@headlessui/react';
-import { toast } from 'react-hot-toast';
 
 // Initialize lowlight with common languages
 const lowlight = createLowlight(common);
@@ -390,7 +391,7 @@ export const MenuBar = ({ editor, references = [], onReferencesChange }: MenuBar
       </div>
 
       <div className="flex-1 overflow-auto">
-        <EditorContent editor={editor} className="prose max-w-none p-2 sm:p-4" />
+        <EditorContent editor={editor} className="prose prose-sm max-w-none p-2 sm:p-4 [&_.ProseMirror_p]:leading-relaxed [&_.ProseMirror_p]:my-1" />
       </div>
 
       {references.length > 0 && (
@@ -441,7 +442,7 @@ interface RichTextEditorProps {
   };
 }
 
-export default function RichTextEditor({ content, onChange, lineWrapping }: RichTextEditorProps) {
+export default function RichTextEditor({ content, onChange }: RichTextEditorProps) {
   const [textColor, setTextColor] = useState('#000000');
   const [showHighlightColors, setShowHighlightColors] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -506,6 +507,12 @@ export default function RichTextEditor({ content, onChange, lineWrapping }: Rich
         nested: true,
       }),
       Underline,
+      Link.configure({
+        openOnClick: true,
+        HTMLAttributes: {
+          class: 'text-blue-600 hover:underline',
+        },
+      }),
       Image.configure({
         HTMLAttributes: {
           class: 'max-w-full h-auto my-4',
@@ -649,6 +656,24 @@ export default function RichTextEditor({ content, onChange, lineWrapping }: Rich
     }
   }, [editor]);
 
+  // Add this function to handle link insertion
+  const setLink = useCallback(() => {
+    const url = window.prompt('Enter URL:');
+
+    if (url === null) {
+      return;
+    }
+
+    // If no URL is provided, remove the link
+    if (url === '') {
+      editor?.chain().focus().extendMarkRange('link').unsetMark('link').run();
+      return;
+    }
+
+    // Set the link
+    editor?.chain().focus().extendMarkRange('link').setMark('link', { href: url }).run();
+  }, [editor]);
+
   if (!editor) {
     return null;
   }
@@ -656,11 +681,11 @@ export default function RichTextEditor({ content, onChange, lineWrapping }: Rich
   return (
     <div className="border rounded-lg overflow-hidden bg-white flex flex-col h-full">
       <div className="border-b border-gray-200 p-1.5 sm:p-2 flex flex-wrap gap-1 overflow-x-auto">
-        <div className="flex gap-1 items-center min-w-0 flex-grow sm:flex-grow-0">
+        <div className="flex gap-0.5 sm:gap-1 items-center min-w-0 flex-grow sm:flex-grow-0">
           <button
             onClick={() => editor.chain().focus().toggleBold().run()}
             disabled={!editor.can().chain().focus().toggleBold().run()}
-            className={`p-1.5 sm:p-2 rounded hover:bg-gray-100 ${
+            className={`p-1 sm:p-2 rounded hover:bg-gray-100 ${
               editor.isActive('bold') ? 'bg-gray-100' : ''
             }`}
           >
@@ -669,7 +694,7 @@ export default function RichTextEditor({ content, onChange, lineWrapping }: Rich
           <button
             onClick={() => editor.chain().focus().toggleItalic().run()}
             disabled={!editor.can().chain().focus().toggleItalic().run()}
-            className={`p-1.5 sm:p-2 rounded hover:bg-gray-100 ${
+            className={`p-1 sm:p-2 rounded hover:bg-gray-100 ${
               editor.isActive('italic') ? 'bg-gray-100' : ''
             }`}
           >
@@ -677,7 +702,7 @@ export default function RichTextEditor({ content, onChange, lineWrapping }: Rich
           </button>
           <button
             onClick={() => editor.chain().focus().toggleUnderline().run()}
-            className={`p-1.5 sm:p-2 rounded hover:bg-gray-100 ${
+            className={`p-1 sm:p-2 rounded hover:bg-gray-100 ${
               editor.isActive('underline') ? 'bg-gray-100' : ''
             }`}
           >
@@ -686,7 +711,7 @@ export default function RichTextEditor({ content, onChange, lineWrapping }: Rich
           <button
             onClick={() => editor.chain().focus().toggleStrike().run()}
             disabled={!editor.can().chain().focus().toggleStrike().run()}
-            className={`p-1.5 sm:p-2 rounded hover:bg-gray-100 ${
+            className={`p-1 sm:p-2 rounded hover:bg-gray-100 ${
               editor.isActive('strike') ? 'bg-gray-100' : ''
             }`}
           >
@@ -694,12 +719,12 @@ export default function RichTextEditor({ content, onChange, lineWrapping }: Rich
           </button>
         </div>
 
-        <div className="flex gap-1 items-center min-w-0">
+        <div className="flex gap-0.5 sm:gap-1 items-center min-w-0">
           <div className="relative">
             <button
               ref={highlightButtonRef}
               onClick={() => setShowHighlightColors(!showHighlightColors)}
-              className={`p-1.5 sm:p-2 rounded hover:bg-gray-100 ${
+              className={`p-1 sm:p-2 rounded hover:bg-gray-100 ${
                 editor.isActive('highlight') ? 'bg-gray-100' : ''
               }`}
             >
@@ -732,7 +757,7 @@ export default function RichTextEditor({ content, onChange, lineWrapping }: Rich
 
           <button
             onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-            className={`p-1.5 sm:p-2 rounded hover:bg-gray-100 ${
+            className={`p-1 sm:p-2 rounded hover:bg-gray-100 ${
               editor.isActive('heading', { level: 2 }) ? 'bg-gray-100' : ''
             }`}
           >
@@ -740,10 +765,10 @@ export default function RichTextEditor({ content, onChange, lineWrapping }: Rich
           </button>
         </div>
 
-        <div className="flex gap-1 items-center min-w-0">
+        <div className="flex gap-0.5 sm:gap-1 items-center min-w-0">
           <button
             onClick={() => editor.chain().focus().toggleBulletList().run()}
-            className={`p-1.5 sm:p-2 rounded hover:bg-gray-100 ${
+            className={`p-1 sm:p-2 rounded hover:bg-gray-100 ${
               editor.isActive('bulletList') ? 'bg-gray-100' : ''
             }`}
           >
@@ -751,7 +776,7 @@ export default function RichTextEditor({ content, onChange, lineWrapping }: Rich
           </button>
           <button
             onClick={() => editor.chain().focus().toggleOrderedList().run()}
-            className={`p-1.5 sm:p-2 rounded hover:bg-gray-100 ${
+            className={`p-1 sm:p-2 rounded hover:bg-gray-100 ${
               editor.isActive('orderedList') ? 'bg-gray-100' : ''
             }`}
           >
@@ -759,7 +784,7 @@ export default function RichTextEditor({ content, onChange, lineWrapping }: Rich
           </button>
           <button
             onClick={() => editor.chain().focus().toggleTaskList().run()}
-            className={`p-1.5 sm:p-2 rounded hover:bg-gray-100 ${
+            className={`p-1 sm:p-2 rounded hover:bg-gray-100 ${
               editor.isActive('taskList') ? 'bg-gray-100' : ''
             }`}
           >
@@ -767,15 +792,23 @@ export default function RichTextEditor({ content, onChange, lineWrapping }: Rich
           </button>
           <button
             onClick={() => editor.chain().focus().toggleBlockquote().run()}
-            className={`p-1.5 sm:p-2 rounded hover:bg-gray-100 ${
+            className={`p-1 sm:p-2 rounded hover:bg-gray-100 ${
               editor.isActive('blockquote') ? 'bg-gray-100' : ''
             }`}
           >
             <Quote size={16} className="sm:w-[18px] sm:h-[18px]" />
           </button>
           <button
+            onClick={setLink}
+            className={`p-1 sm:p-2 rounded hover:bg-gray-100 ${
+              editor.isActive('link') ? 'bg-gray-100' : ''
+            }`}
+          >
+            <LinkIcon size={16} className="sm:w-[18px] sm:h-[18px]" />
+          </button>
+          <button
             onClick={() => setIsTableDialogOpen(true)}
-            className={`p-1.5 sm:p-2 rounded hover:bg-gray-100 ${
+            className={`p-1 sm:p-2 rounded hover:bg-gray-100 ${
               editor.isActive('table') ? 'bg-gray-100' : ''
             }`}
           >
@@ -783,7 +816,7 @@ export default function RichTextEditor({ content, onChange, lineWrapping }: Rich
           </button>
           <button
             onClick={() => setIsCodeSnippetDialogOpen(true)}
-            className={`p-1.5 sm:p-2 rounded hover:bg-gray-100 ${
+            className={`p-1 sm:p-2 rounded hover:bg-gray-100 ${
               editor.isActive('codeBlock') ? 'bg-gray-100' : ''
             }`}
           >
@@ -791,7 +824,7 @@ export default function RichTextEditor({ content, onChange, lineWrapping }: Rich
           </button>
         </div>
 
-        <div className="flex gap-1 items-center min-w-0">
+        <div className="flex gap-0.5 sm:gap-1 items-center min-w-0">
           <div className="relative">
             <input
               type="file"
@@ -803,7 +836,7 @@ export default function RichTextEditor({ content, onChange, lineWrapping }: Rich
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={uploading}
-              className="p-1.5 sm:p-2 rounded hover:bg-gray-100 relative"
+              className="p-1 sm:p-2 rounded hover:bg-gray-100 relative"
             >
               {uploading ? (
                 <Loader2 size={16} className="sm:w-[18px] sm:h-[18px] animate-spin" />
@@ -816,14 +849,14 @@ export default function RichTextEditor({ content, onChange, lineWrapping }: Rich
           <button
             onClick={() => editor.chain().focus().undo().run()}
             disabled={!editor.can().chain().focus().undo().run()}
-            className="p-1.5 sm:p-2 rounded hover:bg-gray-100"
+            className="p-1 sm:p-2 rounded hover:bg-gray-100"
           >
             <Undo size={16} className="sm:w-[18px] sm:h-[18px]" />
           </button>
           <button
             onClick={() => editor.chain().focus().redo().run()}
             disabled={!editor.can().chain().focus().redo().run()}
-            className="p-1.5 sm:p-2 rounded hover:bg-gray-100"
+            className="p-1 sm:p-2 rounded hover:bg-gray-100"
           >
             <Redo size={16} className="sm:w-[18px] sm:h-[18px]" />
           </button>
@@ -838,7 +871,7 @@ export default function RichTextEditor({ content, onChange, lineWrapping }: Rich
       </div>
 
       <div className="flex-1 overflow-auto">
-        <EditorContent editor={editor} className="prose max-w-none p-2 sm:p-4" />
+        <EditorContent editor={editor} className="prose prose-sm max-w-none p-2 sm:p-4 [&_.ProseMirror_p]:leading-relaxed [&_.ProseMirror_p]:my-1" />
       </div>
 
       {parsedReferences.length > 0 && (

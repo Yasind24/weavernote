@@ -191,56 +191,58 @@ export function FolderNotebookSelect({
           </div>
         ) : (
           <>
-            <div className="flex items-center gap-2">
-              <Folder size={16} className="text-gray-500" />
-              <select
-                value={selectedFolderId}
-                onChange={(e) => {
-                  setSelectedFolderId(e.target.value);
-                  setError('');
-                }}
-                className="border rounded-lg px-2 py-1 pr-8 text-sm"
-              >
-                <option value="">Select Folder</option>
-                {folders.map((folder) => (
-                  <option key={folder.id} value={folder.id}>
-                    {folder.name}
-                  </option>
-                ))}
-              </select>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <div className="flex items-center gap-2">
+                <Folder size={16} className="text-gray-500" />
+                <select
+                  value={selectedFolderId}
+                  onChange={(e) => {
+                    setSelectedFolderId(e.target.value);
+                    setError('');
+                  }}
+                  className="border rounded-lg px-2 py-1 pr-8 text-sm"
+                >
+                  <option value="">Select Folder</option>
+                  {folders.map((folder) => (
+                    <option key={folder.id} value={folder.id}>
+                      {folder.name}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  onClick={() => {
+                    setShowNewFolderInput(true);
+                    setError('');
+                  }}
+                  className="p-1 hover:bg-gray-100 rounded-lg"
+                  title="Create new folder"
+                >
+                  <Folder size={16} />
+                </button>
+              </div>
+              <div className="flex items-center gap-2">
+                <Book size={16} className="text-gray-500" />
+                <select
+                  value={selectedNotebookId}
+                  onChange={(e) => onNotebookSelect(e.target.value)}
+                  className="border rounded-lg px-2 py-1 pr-8 text-sm"
+                >
+                  <option value="">Select Notebook</option>
+                  {filteredNotebooks.map((notebook) => (
+                    <option key={notebook.id} value={notebook.id}>
+                      {notebook.name}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  onClick={handleNewNotebookClick}
+                  className="p-1 hover:bg-gray-100 rounded-lg"
+                  title="Create new notebook"
+                >
+                  <Book size={16} />
+                </button>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Book size={16} className="text-gray-500" />
-              <select
-                value={selectedNotebookId}
-                onChange={(e) => onNotebookSelect(e.target.value)}
-                className="border rounded-lg px-2 py-1 pr-8 text-sm"
-              >
-                <option value="">Select Notebook</option>
-                {filteredNotebooks.map((notebook) => (
-                  <option key={notebook.id} value={notebook.id}>
-                    {notebook.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <button
-              onClick={() => {
-                setShowNewFolderInput(true);
-                setError('');
-              }}
-              className="p-1 hover:bg-gray-100 rounded-lg"
-              title="Create new folder"
-            >
-              <Folder size={16} />
-            </button>
-            <button
-              onClick={handleNewNotebookClick}
-              className="p-1 hover:bg-gray-100 rounded-lg"
-              title="Create new notebook"
-            >
-              <Book size={16} />
-            </button>
           </>
         )}
       </div>

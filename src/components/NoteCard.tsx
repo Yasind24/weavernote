@@ -90,7 +90,7 @@ export default function NoteCard({ note, onEdit }: NoteCardProps) {
               <MoreVertical size={16} />
             </button>
             {showMenu && (
-              <div className="fixed sm:absolute transform -translate-x-48 sm:-translate-x-48 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+              <div className="absolute right-0 sm:right-auto sm:-translate-x-48 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
                 {!note.is_trashed && (
                   <>
                     <button
@@ -170,7 +170,7 @@ export default function NoteCard({ note, onEdit }: NoteCardProps) {
         )}
 
         <div 
-          className="text-gray-600 text-sm prose prose-sm flex-grow min-h-[60px] max-h-[200px] overflow-hidden"
+          className="text-gray-600 text-sm prose prose-sm flex-grow min-h-[60px] max-h-[200px] overflow-hidden [&_p]:leading-relaxed [&_p]:my-1 [&_ul.contains-task-list]:pl-0 [&_li.task-list-item]:pl-0 [&_li.task-list-item]:flex [&_li.task-list-item]:items-start [&_li.task-list-item>input]:mt-[0.3em] [&_li.task-list-item>input]:mr-2"
           dangerouslySetInnerHTML={{ __html: formattedContent }}
         />
 
