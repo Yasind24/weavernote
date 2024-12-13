@@ -47,8 +47,13 @@ class SupabaseConnectionManager {
 
   private async handleVisibilityChange() {
     if (document.visibilityState === 'visible') {
-      const isConnected = await this.checkConnection();
+      // Check for valid session first
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        return;
+      }
       
+      const isConnected = await this.checkConnection();
       if (!isConnected) {
         await this.reconnect();
       }
@@ -105,7 +110,14 @@ class SupabaseConnectionManager {
 
   public async checkConnection(): Promise<boolean> {
     try {
-      // First check if realtime is connected
+      // First check if we have a valid session
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        // No valid session, don't attempt to reconnect
+        return false;
+      }
+
+      // Then check realtime connection
       if (!supabase.realtime.isConnected()) {
         await this.reconnect();
       }
@@ -113,10 +125,7 @@ class SupabaseConnectionManager {
       // Verify with a test query
       const { error } = await supabase.from('notes').select('id').limit(1);
       
-      // Also verify auth session
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (error || !session) {
+      if (error) {
         await this.reconnect();
         return false;
       }
@@ -124,7 +133,6 @@ class SupabaseConnectionManager {
       return true;
     } catch (error) {
       console.error('Error checking connection:', error);
-      await this.reconnect();
       return false;
     }
   }

@@ -16,9 +16,16 @@ interface ResultsDialogProps {
 
 function ResultsDialog({ type, data, onClose }: ResultsDialogProps) {
   const [revealedAnswers, setRevealedAnswers] = useState<{ [key: number]: boolean }>({});
+  const [selectedAnswers, setSelectedAnswers] = useState<{ [key: number]: string }>({});
   const [revealAll, setRevealAll] = useState(false);
 
-  const toggleAnswer = (index: number) => {
+  const toggleAnswer = (index: number, selectedOption?: string) => {
+    if (type === 'quiz' && selectedOption && !revealedAnswers[index]) {
+      setSelectedAnswers(prev => ({
+        ...prev,
+        [index]: selectedOption
+      }));
+    }
     setRevealedAnswers(prev => ({
       ...prev,
       [index]: !prev[index]
@@ -42,13 +49,30 @@ function ResultsDialog({ type, data, onClose }: ResultsDialogProps) {
   const handleHideAll = () => {
     setRevealAll(false);
     setRevealedAnswers({});
+    setSelectedAnswers({});
+  };
+
+  const getQuizOptionClass = (index: number, option: string, correctAnswer: string) => {
+    if (!revealedAnswers[index]) {
+      return 'bg-gray-50 hover:bg-gray-100';
+    }
+    
+    if (option === correctAnswer) {
+      return 'bg-green-100 text-green-800';
+    }
+    
+    if (selectedAnswers[index] === option) {
+      return 'bg-red-100 text-red-800';
+    }
+    
+    return 'bg-gray-50';
   };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100]">
-      <div className="bg-white rounded-lg w-full max-w-4xl h-[90vh] m-4 flex flex-col">
-        <div className="p-6 border-b flex justify-between items-center sticky top-0 bg-white rounded-t-lg z-[101]">
-          <h2 className="text-xl font-semibold">
+      <div className="bg-white rounded-lg w-full max-w-4xl mx-4 h-[90vh] flex flex-col">
+        <div className="p-4 sm:p-6 border-b flex justify-between items-center bg-white rounded-t-lg z-[101]">
+          <h2 className="text-lg sm:text-xl font-semibold">
             {type === 'summary' ? 'Holistic Summary' :
              type === 'flashcards' ? 'Study Flashcards' :
              'Knowledge Quiz'}
@@ -57,21 +81,21 @@ function ResultsDialog({ type, data, onClose }: ResultsDialogProps) {
             {(type === 'flashcards' || type === 'quiz') && (
               <button
                 onClick={revealAll ? handleHideAll : handleRevealAll}
-                className="px-3 py-1 text-sm bg-yellow-500 text-white rounded hover:bg-yellow-600"
+                className="px-2 sm:px-3 py-1 text-sm bg-yellow-500 text-white rounded hover:bg-yellow-600"
               >
                 {revealAll ? 'Hide All' : 'Reveal All'}
               </button>
             )}
             <button
               onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-lg"
+              className="p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg"
             >
               <X size={20} />
             </button>
           </div>
         </div>
-        
-        <div className="flex-1 overflow-y-auto p-6">
+
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
           {type === 'summary' && (
             <div className="prose max-w-none">
               {data}
@@ -79,23 +103,23 @@ function ResultsDialog({ type, data, onClose }: ResultsDialogProps) {
           )}
 
           {type === 'flashcards' && (
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
               {data.map((card: { question: string; answer: string }, index: number) => (
                 <div 
                   key={index} 
                   className="border rounded-lg hover:shadow-md transition-shadow cursor-pointer"
                   onClick={() => toggleAnswer(index)}
                 >
-                  <div className="p-4 border-b bg-gray-50">
-                    <div className="font-medium">{card.question}</div>
+                  <div className="p-3 sm:p-4 border-b bg-gray-50">
+                    <div className="font-medium text-sm sm:text-base">{card.question}</div>
                   </div>
                   <div 
-                    className={`p-4 ${revealedAnswers[index] ? 'opacity-100' : 'opacity-0'} transition-opacity`}
+                    className={`p-3 sm:p-4 ${revealedAnswers[index] ? 'opacity-100' : 'opacity-0'} transition-opacity text-sm sm:text-base`}
                   >
                     {card.answer}
                   </div>
                   {!revealedAnswers[index] && (
-                    <div className="p-4 text-center text-sm text-gray-500">
+                    <div className="p-3 sm:p-4 text-center text-xs sm:text-sm text-gray-500">
                       Click to reveal answer
                     </div>
                   )}
@@ -105,37 +129,44 @@ function ResultsDialog({ type, data, onClose }: ResultsDialogProps) {
           )}
 
           {type === 'quiz' && (
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               {data.map((question: {
                 question: string;
                 options: string[];
                 correctAnswer: string;
               }, index: number) => (
                 <div key={index} className="border rounded-lg">
-                  <div className="p-4 border-b bg-gray-50">
-                    <div className="font-medium">{question.question}</div>
+                  <div className="p-3 sm:p-4 border-b bg-gray-50">
+                    <div className="font-medium text-sm sm:text-base">{question.question}</div>
                   </div>
-                  <div className="p-4">
+                  <div className="p-3 sm:p-4">
                     <div className="space-y-2">
                       {question.options.map((option, optionIndex) => (
                         <div
                           key={optionIndex}
-                          className={`p-2 rounded cursor-pointer transition-colors ${
-                            revealedAnswers[index]
-                              ? option === question.correctAnswer
-                                ? 'bg-green-100 text-green-800'
-                                : 'bg-gray-50'
-                              : 'bg-gray-50 hover:bg-gray-100'
+                          className={`p-2 rounded cursor-pointer transition-colors text-sm sm:text-base ${
+                            getQuizOptionClass(index, option, question.correctAnswer)
                           }`}
-                          onClick={() => !revealedAnswers[index] && toggleAnswer(index)}
+                          onClick={() => !revealedAnswers[index] && toggleAnswer(index, option)}
                         >
                           {option}
                         </div>
                       ))}
                     </div>
+                    {revealedAnswers[index] && (
+                      <div className="mt-3 text-center text-xs sm:text-sm">
+                        {selectedAnswers[index] === question.correctAnswer ? (
+                          <span className="text-green-600">Correct!</span>
+                        ) : (
+                          <span className="text-red-600">
+                            Incorrect. The correct answer is shown in green.
+                          </span>
+                        )}
+                      </div>
+                    )}
                     {!revealedAnswers[index] && (
-                      <div className="mt-3 text-center text-sm text-gray-500">
-                        Click any option to reveal the answer
+                      <div className="mt-3 text-center text-xs sm:text-sm text-gray-500">
+                        Click any option to answer
                       </div>
                     )}
                   </div>

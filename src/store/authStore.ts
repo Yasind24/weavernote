@@ -26,11 +26,27 @@ const useAuthStore = create<AuthState>()(
 
       signOut: async () => {
         try {
+          // First disconnect realtime and cleanup all subscriptions
+          await supabase.realtime.disconnect();
+          
+          // Clear all local storage auth data
+          const prefix = 'sb-' + import.meta.env.VITE_SUPABASE_PROJECT_REF;
+          localStorage.removeItem(`${prefix}-auth-token`);
+          localStorage.removeItem('auth-storage');
+          
+          // Then sign out
           await supabase.auth.signOut();
-          set({ user: null, error: null });
+          
+          // Clear local state
+          set({ user: null, error: null, initialized: false });
+          
+          // Navigate to landing page
+          window.location.href = '/';
         } catch (error) {
           console.error('Error signing out:', error);
-          set({ error: 'Failed to sign out' });
+          // Still clear local state even if API call fails
+          set({ user: null, error: null, initialized: false });
+          window.location.href = '/';
         }
       },
 

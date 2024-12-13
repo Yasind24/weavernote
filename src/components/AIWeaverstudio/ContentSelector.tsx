@@ -42,6 +42,15 @@ export function ContentSelector({
     };
   }, []);
 
+  // Auto-open dropdowns when searching
+  useEffect(() => {
+    if (searchQuery) {
+      setOpenDropdown('folders');
+    } else {
+      setOpenDropdown(null);
+    }
+  }, [searchQuery]);
+
   // Helper function to get notebooks in a folder
   const getNotebooksInFolder = (folderId: string) => {
     return notebooks.filter(notebook => notebook.folder_id === folderId);
@@ -80,6 +89,8 @@ export function ContentSelector({
   const filteredFolders = folders.filter(folder =>
     folder.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const hasSearchResults = filteredFolders.length > 0 || filteredNotebooks.length > 0 || filteredNotes.length > 0;
 
   const toggleNote = (note: Note) => {
     const isSelected = selectedNotes.some(n => n.id === note.id);
@@ -201,6 +212,12 @@ export function ContentSelector({
         )}
       </div>
 
+      {searchQuery && !hasSearchResults && (
+        <div className="text-center py-4 text-gray-500">
+          No results found for "{searchQuery}"
+        </div>
+      )}
+
       <div className="space-y-2">
         {/* Folders Dropdown */}
         <div className="relative">
@@ -209,12 +226,21 @@ export function ContentSelector({
               e.stopPropagation();
               setOpenDropdown(openDropdown === 'folders' ? null : 'folders');
             }}
-            className="w-full flex items-center justify-between px-4 py-2 border rounded-lg bg-white hover:bg-gray-50"
+            className={`w-full flex items-center justify-between px-4 py-2 border rounded-lg bg-white hover:bg-gray-50 ${
+              searchQuery && filteredFolders.length > 0 ? 'border-yellow-500' : ''
+            }`}
           >
             <span className="text-sm">{getDropdownSummary('folders')}</span>
-            <ChevronDown className={`transform transition-transform ${openDropdown === 'folders' ? 'rotate-180' : ''}`} size={16} />
+            <div className="flex items-center gap-2">
+              {searchQuery && filteredFolders.length > 0 && (
+                <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full">
+                  {filteredFolders.length}
+                </span>
+              )}
+              <ChevronDown className={`transform transition-transform ${openDropdown === 'folders' ? 'rotate-180' : ''}`} size={16} />
+            </div>
           </button>
-          {openDropdown === 'folders' && (
+          {(openDropdown === 'folders' || (searchQuery && filteredFolders.length > 0)) && (
             <div className="absolute z-30 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-60 overflow-y-auto">
               <div className="p-2 space-y-1">
                 {filteredFolders.map(folder => (
@@ -244,12 +270,21 @@ export function ContentSelector({
               e.stopPropagation();
               setOpenDropdown(openDropdown === 'notebooks' ? null : 'notebooks');
             }}
-            className="w-full flex items-center justify-between px-4 py-2 border rounded-lg bg-white hover:bg-gray-50"
+            className={`w-full flex items-center justify-between px-4 py-2 border rounded-lg bg-white hover:bg-gray-50 ${
+              searchQuery && filteredNotebooks.length > 0 ? 'border-yellow-500' : ''
+            }`}
           >
             <span className="text-sm">{getDropdownSummary('notebooks')}</span>
-            <ChevronDown className={`transform transition-transform ${openDropdown === 'notebooks' ? 'rotate-180' : ''}`} size={16} />
+            <div className="flex items-center gap-2">
+              {searchQuery && filteredNotebooks.length > 0 && (
+                <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full">
+                  {filteredNotebooks.length}
+                </span>
+              )}
+              <ChevronDown className={`transform transition-transform ${openDropdown === 'notebooks' ? 'rotate-180' : ''}`} size={16} />
+            </div>
           </button>
-          {openDropdown === 'notebooks' && (
+          {(openDropdown === 'notebooks' || (searchQuery && filteredNotebooks.length > 0)) && (
             <div className="absolute z-20 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-60 overflow-y-auto">
               <div className="p-2 space-y-1">
                 {filteredNotebooks.map(notebook => (
@@ -279,12 +314,21 @@ export function ContentSelector({
               e.stopPropagation();
               setOpenDropdown(openDropdown === 'notes' ? null : 'notes');
             }}
-            className="w-full flex items-center justify-between px-4 py-2 border rounded-lg bg-white hover:bg-gray-50"
+            className={`w-full flex items-center justify-between px-4 py-2 border rounded-lg bg-white hover:bg-gray-50 ${
+              searchQuery && filteredNotes.length > 0 ? 'border-yellow-500' : ''
+            }`}
           >
             <span className="text-sm">{getDropdownSummary('notes')}</span>
-            <ChevronDown className={`transform transition-transform ${openDropdown === 'notes' ? 'rotate-180' : ''}`} size={16} />
+            <div className="flex items-center gap-2">
+              {searchQuery && filteredNotes.length > 0 && (
+                <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full">
+                  {filteredNotes.length}
+                </span>
+              )}
+              <ChevronDown className={`transform transition-transform ${openDropdown === 'notes' ? 'rotate-180' : ''}`} size={16} />
+            </div>
           </button>
-          {openDropdown === 'notes' && (
+          {(openDropdown === 'notes' || (searchQuery && filteredNotes.length > 0)) && (
             <div className="absolute z-10 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-60 overflow-y-auto">
               <div className="p-2 space-y-1">
                 {filteredNotes.map(note => (

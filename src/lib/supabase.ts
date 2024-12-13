@@ -43,25 +43,27 @@ supabase.realtime.connect();
 if (typeof document !== 'undefined') {
   let reconnectTimeout: NodeJS.Timeout | null = null;
   
-  document.addEventListener('visibilitychange', () => {
+  document.addEventListener('visibilitychange', async () => {
+    // Clear any pending reconnect first
+    if (reconnectTimeout) {
+      clearTimeout(reconnectTimeout);
+      reconnectTimeout = null;
+    }
+
     if (document.visibilityState === 'visible') {
-      // Clear any pending reconnect
-      if (reconnectTimeout) {
-        clearTimeout(reconnectTimeout);
-        reconnectTimeout = null;
+      // Check if we have a valid session before reconnecting
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        // Ensure we're disconnected if no valid session
+        await supabase.realtime.disconnect();
+        return;
       }
       
-      // Only reconnect if not already connected
+      // Only reconnect if not already connected and we have a valid session
       if (!supabase.realtime.isConnected()) {
         supabase.realtime.connect();
       }
-    } else {
-      // Schedule a reconnect when tab becomes visible again
-      reconnectTimeout = setTimeout(() => {
-        if (document.visibilityState === 'visible') {
-          supabase.realtime.connect();
-        }
-      }, 1000);
     }
   });
 }

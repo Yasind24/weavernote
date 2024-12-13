@@ -1,5 +1,5 @@
 import React from 'react';
-import type { Note, Notebook, Folder } from '../../../types';
+import type { Note, Notebook, Folder } from '../../../types/Note';
 
 interface AnalyzeButtonProps {
   loading: boolean;

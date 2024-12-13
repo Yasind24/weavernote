@@ -6,7 +6,7 @@ interface HeroSectionProps {
   pricingRef: React.RefObject<HTMLDivElement>;
 }
   
-export function HeroSection({ onGetStarted, pricingRef }: HeroSectionProps) {
+export function HeroSection({ pricingRef }: HeroSectionProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleModalToggle = () => {

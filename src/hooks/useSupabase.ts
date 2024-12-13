@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import useAuthStore from '../store/authStore';
 import useNotebookStore from '../store/notebookStore';
 import useNoteStore from '../store/noteStore';
+import useFolderStore from '../store/folderStore';
 import { toast } from 'react-hot-toast';
 import { AuthChangeEvent } from '@supabase/supabase-js';
 
@@ -54,6 +55,15 @@ export function useSupabase() {
       subscription.unsubscribe();
     };
   }, [initialized, handleAuthChange, setUser]);
+
+  useEffect(() => {
+    if (!user) {
+      // Clear all stores when user signs out
+      useNotebookStore.setState({ notebooks: [], loading: false, error: null });
+      useNoteStore.setState({ notes: [], currentNote: null, loading: false, error: null });
+      useFolderStore.setState({ folders: [], loading: false, error: null });
+    }
+  }, [user]);
 
   return { user };
 }

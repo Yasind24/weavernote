@@ -10,6 +10,7 @@ import { Logo } from './Logo';
 import { EditProfileDialog } from './EditProfileDialog';
 import type { Folder, Notebook } from '../types/Note';
 import { toast } from 'react-hot-toast';
+import { supabase } from '../lib/supabase';
 
 interface SidebarProps {
   isCollapsed: boolean;
@@ -39,6 +40,9 @@ export function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
 
   const handleSignOut = async () => {
     try {
+      // Cleanup any active subscriptions by disconnecting realtime
+      await supabase.realtime.disconnect();
+      
       await signOut();
       setSelectedCategory('all');
       setSelectedFolder(null);
