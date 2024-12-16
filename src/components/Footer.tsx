@@ -1,5 +1,6 @@
 import React from 'react';
 import { Heart } from 'lucide-react';
+import { PolicyModals } from './landing/PolicyModals';
 
 interface FooterProps {
   showCredit?: boolean;
@@ -30,8 +31,11 @@ export function Footer({ showCredit = false, size = 'default' }: FooterProps) {
               Weave your thoughts, empower your creativity
             </div>
           )}
-          <div className="text-sm text-gray-500">
-            © {new Date().getFullYear()} Weavernote. All rights reserved.
+          <div className="flex flex-col items-center gap-4">
+            {showCredit && <PolicyModals />}
+            <div className="text-sm text-gray-500 text-center w-full">
+              © {new Date().getFullYear()} Weavernote. All rights reserved.
+            </div>
           </div>
         </div>
       </div>

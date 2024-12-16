@@ -48,6 +48,7 @@ export function HeroSection({ pricingRef, onGetStarted }: HeroSectionProps) {
   const { session, signInWithGoogle } = useAuth();
   const { hasActiveSubscription, checkSubscription } = useSubscriptionStore();
   const [isLoading, setIsLoading] = useState(false);
+  const [isVideoOpen, setIsVideoOpen] = useState(false);
 
   useEffect(() => {
     if (session?.user?.email) {
@@ -128,6 +129,25 @@ export function HeroSection({ pricingRef, onGetStarted }: HeroSectionProps) {
 
   return (
     <div className="relative bg-white overflow-hidden">
+      {isVideoOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75" onClick={() => setIsVideoOpen(false)}>
+          <div className="relative w-full max-w-4xl mx-4 aspect-video">
+            <button 
+              className="absolute -top-8 right-0 text-white hover:text-gray-300"
+              onClick={() => setIsVideoOpen(false)}
+            >
+              Close
+            </button>
+            <iframe
+              className="w-full h-full rounded-lg"
+              src="https://www.youtube.com/embed/PL7m8UXvBAM"
+              title="Weavernote Demo"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          </div>
+        </div>
+      )}
       <div className="max-w-7xl mx-auto">
         <div className="relative z-10 pb-8 sm:pb-16 md:pb-20 lg:pb-28 xl:pb-32 bg-white lg:bg-transparent">
           <div className="pt-6 px-4 sm:px-6 lg:px-8">
@@ -138,12 +158,13 @@ export function HeroSection({ pricingRef, onGetStarted }: HeroSectionProps) {
             <div className="text-center lg:text-left lg:grid lg:grid-cols-12 lg:gap-8">
               <div className="lg:col-span-6 xl:col-span-5">
                 <h1 className="text-4xl tracking-tight font-extrabold text-gray-900 sm:text-5xl md:text-6xl">
-                  <span className="block">Transform your ideas into</span>{' '}
-                  <span className="block text-yellow-500">organized brilliance</span>
+                  <span className="block">Weave Your Notes into Knowledge.</span>{' '}
+                  <span className="block text-yellow-500 text-3xl md:text-4xl">Smarter, Faster, Better.</span>
                 </h1>
                 <p className="mt-3 text-base text-gray-500 sm:mt-5 sm:text-lg sm:max-w-xl sm:mx-auto md:mt-5 md:text-xl lg:mx-0">
-                  Capture, organize, and bring your ideas to life with Weavernote. With AI Studio, turn your notes into insights that inspire action
+                Weavernote is your ultimate platform to effortlessly organize, connect, and visualize your notes—powered by AI to be your personal knowledge companion.
                 </p>
+                <p className="mt-1 text-base text-gray-500 sm:mt-1 sm:text-lg sm:max-w-xl sm:mx-auto md:mt-1 md:text-xl lg:mx-0">Perfect for students, creators, and lifelong learners.</p>
                 <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                   <button
                     onClick={onGetStarted}
@@ -156,16 +177,23 @@ export function HeroSection({ pricingRef, onGetStarted }: HeroSectionProps) {
               </div>
               <div className="mt-12 lg:mt-0 lg:col-span-6 xl:col-span-7">
                 <div 
-                  className="relative mx-auto w-full rounded-lg shadow-lg lg:max-w-none aspect-video cursor-pointer hover:opacity-90 transition-opacity"
+                  className="relative mx-auto w-full rounded-lg shadow-lg lg:max-w-none aspect-video cursor-pointer hover:opacity-90 transition-opacity group"
+                  onClick={() => setIsVideoOpen(true)}
                 >
-                  <iframe
-                    className="w-full h-full rounded-lg pointer-events-none"
-                    src="https://www.youtube.com/embed/l8sZZMA2D5U"
-                    title="Weavernote Demo"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
+                  <img
+                    className="w-full h-full rounded-lg object-cover"
+                    src="https://img.youtube.com/vi/PL7m8UXvBAM/maxresdefault.jpg"
+                    alt="Weavernote Demo"
                   />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-[68px] h-[48px] bg-[#FF0000] rounded-lg flex items-center justify-center group-hover:bg-[#CC0000] transition-colors">
+                      <svg height="100%" version="1.1" viewBox="0 0 68 48" width="100%">
+                        <path className="fill-white" d="M 45,24 27,14 27,34" />
+                      </svg>
+                    </div>
+                  </div>
                 </div>
+                <p className="text-center mt-2 text-gray-600 font-medium">Watch the demo</p>
               </div>
             </div>
           </main>

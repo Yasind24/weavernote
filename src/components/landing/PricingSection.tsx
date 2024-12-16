@@ -6,25 +6,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useSubscriptionStore } from '../../store/subscriptionStore';
 import { toast } from 'react-hot-toast';
 
-interface PricingCardProps {
-  title: string;
-  price: string;
-  subtitle: string;
-  features: string[];
-  icon: string;
-  buttonText: string;
-  isPopular?: boolean;
-}
-
-function PricingCard({
-  title,
-  price,
-  subtitle,
-  features,
-  icon,
-  buttonText,
-  isPopular = false,
-}: PricingCardProps) {
+export const PricingSection = React.forwardRef<HTMLDivElement>((_, ref) => {
   const { user } = useAuthStore();
   const { signInWithGoogle } = useAuth();
   const { hasActiveSubscription, checkSubscription } = useSubscriptionStore();
@@ -76,77 +58,74 @@ function PricingCard({
   const getButtonText = () => {
     if (!user) return 'Sign in to Continue';
     if (hasActiveSubscription) return 'Access Your Account';
-    return buttonText;
+    return 'Get Lifetime Access';
   };
 
-  return (
-    <div className={`relative rounded-2xl bg-white p-8 shadow-lg flex flex-col ${isPopular ? 'border-2 border-yellow-500' : 'border border-gray-200'}`}>
-      {isPopular && (
-        <div className="absolute -top-5 left-1/2 -translate-x-1/2 px-4 py-1 bg-yellow-500 text-white text-sm font-medium rounded-full">
-          Limited Time Offer
-        </div>
-      )}
-      <div className="mb-5">
-        <div className="flex items-center gap-2 mb-2">
-          <span className="text-2xl">{icon}</span>
-          <h3 className="text-xl font-bold text-gray-900">{title}</h3>
-        </div>
-        <div className="flex items-baseline gap-1">
-          <span className="text-4xl font-bold tracking-tight text-gray-900">{price}</span>
-        </div>
-        <p className="mt-2 text-sm text-gray-500">{subtitle}</p>
-      </div>
-
-      <ul className="mb-8 space-y-4 flex-1">
-        {features.map((feature, index) => (
-          <li key={index} className="flex items-start gap-3">
-            <Check className="h-5 w-5 flex-shrink-0 text-yellow-500" />
-            <span className="text-gray-600 text-sm">{feature}</span>
-          </li>
-        ))}
-      </ul>
-
-      <button
-        onClick={handleClick}
-        className="w-full rounded-lg px-4 py-3 text-base font-semibold shadow-sm transition-all hover:scale-105 bg-yellow-500 text-white hover:bg-yellow-600"
-      >
-        {getButtonText()}
-      </button>
-    </div>
-  );
-}
-
-export const PricingSection = React.forwardRef<HTMLDivElement>((_, ref) => {
   return (
     <div id="pricing" ref={ref} className="bg-gray-50 py-16 sm:py-24">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
           <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900">
-            Weavernote Pricing
+            Special Launch Offer
           </h2>
-          <p className="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">
-            Who doesn't love a good deal?
+          <p className="mt-4 text-xl text-gray-600 max-w-2xl mx-auto">
+            Get lifetime access to Weavernote at an unbeatable price
           </p>
         </div>
 
-        <div className="mx-auto max-w-lg">
-          <PricingCard
-            title="Exclusive Lifetime Plan"
-            price="$100"
-            subtitle="One-time payment - Only 100 spots available!"
-            icon="💰"
-            buttonText="Get Lifetime Access"
-            isPopular={true}
-            features={[
-              "Lifetime access to your notes",
-              "No recurring payments",
-              "Unlimited Notes",
-              "Unlimited AI credits",
-              "Unlimited Visualizations",
-              "Free updates for current features",
-              "Priority access to upcoming upgrades"
-            ]}
-          />
+        <div className="relative mx-auto max-w-3xl">
+          {/* Background decoration */}
+          <div className="absolute inset-0 transform -skew-y-6 bg-yellow-100 rounded-3xl" />
+          
+          <div className="relative bg-white rounded-2xl shadow-xl overflow-hidden">
+            <div className="absolute top-0 left-0 right-0 h-2 bg-yellow-500" />
+            
+            <div className="px-8 py-12 sm:p-16">
+              {/* Header */}
+              <div className="text-center mb-8">
+                <div className="inline-block bg-yellow-100 rounded-full px-4 py-1 mb-4">
+                  <span className="text-yellow-800 font-medium">Only 100 spots available!</span>
+                </div>
+                <h3 className="text-3xl font-bold text-gray-900 mb-2">
+                  Lifetime Access Pass
+                </h3>
+                <div className="flex justify-center items-baseline mb-4">
+                  <span className="text-5xl font-bold text-gray-900">$100</span>
+                  <span className="ml-2 text-gray-500">one-time payment</span>
+                </div>
+              </div>
+
+              {/* Features grid */}
+              <div className="grid sm:grid-cols-2 gap-6 mb-8">
+                {[
+                  "Lifetime access to your notes",
+                  "No subscription required",
+                  "Unlimited Notes & Visualizations",
+                  "All AI features fully unlocked",
+                  "Free updates for current features",
+                  "Priority access to upcoming upgrades"
+                ].map((feature, index) => (
+                  <div key={index} className="flex items-start gap-3">
+                    <Check className="h-5 w-5 flex-shrink-0 text-yellow-500 mt-1" />
+                    <span className="text-gray-600">{feature}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* CTA Button */}
+              <div className="text-center">
+                <button
+                  onClick={handleClick}
+                  className="inline-flex items-center justify-center w-full sm:w-auto px-8 py-4 text-lg font-semibold text-white bg-yellow-500 rounded-xl hover:bg-yellow-600 transition-all hover:scale-105 shadow-lg"
+                >
+                  {getButtonText()}
+                </button>
+                <p className="mt-4 text-sm text-gray-500">
+                  Secure checkout • Instant access • No recurring payments
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -267,7 +267,7 @@ export function AIWeaverstudio({ onClose }: AIWeaverstudioProps) {
               )}
               <div className="text-left">
                 <div className="font-medium">Holistic Summary</div>
-                <div className="text-sm text-gray-600">Generate a comprehensive summary</div>
+                <div className="text-sm text-gray-600">Weave a summary</div>
               </div>
             </button>
 
@@ -283,7 +283,7 @@ export function AIWeaverstudio({ onClose }: AIWeaverstudioProps) {
               )}
               <div className="text-left">
                 <div className="font-medium">Combined Flashcards</div>
-                <div className="text-sm text-gray-600">Create study flashcards</div>
+                <div className="text-sm text-gray-600">Weave flashcards</div>
               </div>
             </button>
 
@@ -299,7 +299,7 @@ export function AIWeaverstudio({ onClose }: AIWeaverstudioProps) {
               )}
               <div className="text-left">
                 <div className="font-medium">Knowledge Quiz</div>
-                <div className="text-sm text-gray-600">Generate practice questions</div>
+                <div className="text-sm text-gray-600">Weave practice questions</div>
               </div>
             </button>
           </div>

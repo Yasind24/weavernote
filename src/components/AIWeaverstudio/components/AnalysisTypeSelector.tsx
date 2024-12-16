@@ -20,7 +20,7 @@ export function AnalysisTypeSelector({ analysisType, onTypeSelect }: AnalysisTyp
           <Brain className="text-yellow-600" />
           <div className="text-left">
             <div className="font-medium">Holistic Summary</div>
-            <div className="text-sm text-gray-600">Generate a comprehensive summary</div>
+            <div className="text-sm text-gray-600">Weave a summary</div>
           </div>
         </button>
 
@@ -33,7 +33,7 @@ export function AnalysisTypeSelector({ analysisType, onTypeSelect }: AnalysisTyp
           <BookOpen className="text-yellow-600" />
           <div className="text-left">
             <div className="font-medium">Combined Flashcards</div>
-            <div className="text-sm text-gray-600">Create study flashcards</div>
+            <div className="text-sm text-gray-600">Weave flashcards</div>
           </div>
         </button>
 
@@ -46,7 +46,7 @@ export function AnalysisTypeSelector({ analysisType, onTypeSelect }: AnalysisTyp
           <HelpCircle className="text-yellow-600" />
           <div className="text-left">
             <div className="font-medium">Knowledge Quiz</div>
-            <div className="text-sm text-gray-600">Generate practice questions</div>
+            <div className="text-sm text-gray-600">Weave practice questions</div>
           </div>
         </button>
       </div>

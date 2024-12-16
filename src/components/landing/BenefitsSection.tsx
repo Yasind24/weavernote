@@ -1,34 +1,34 @@
 import React from 'react';
-import { FolderKanban, Network, Rocket, Shield } from 'lucide-react';
+import { FolderKanban, Brain, Network, TrendingUp } from 'lucide-react';
 
 const benefits = [
   {
     icon: FolderKanban,
-    title: 'Stay Organized Effortlessly',
-    description: 'Keep everything in one place, neatly structured for quick access. Use labels and tags to maintain clarity, no matter how many notes you have.'
+    title: 'Simplify Your Workflow',
+    description: 'Say goodbye to scattered notes and endless tabs. Weavernote keeps everything organized in one space, so you can focus on what truly matters.'
+  },
+  {
+    icon: Brain,
+    title: 'Learn Faster with AI',
+    description: 'Transform your notes into quizzes, flashcards, and summaries instantly. Perfect for acing exams, retaining knowledge, or prepping for big presentations.'
   },
   {
     icon: Network,
-    title: 'Clarity Through Visualization',
-    description: 'Connect ideas and concepts visually for better understanding and creativity. Gain a big-picture view of your notes and projects.'
+    title: 'Think Visually, Act Strategically',
+    description: 'Visualize ideas, connect concepts, and see the bigger picture with our dynamic canvas. Ideal for brainstorming, planning, and creative work.'
   },
   {
-    icon: Rocket,
-    title: 'Boost Your Efficiency',
-    description: 'Save time with AI-powered tools that simplify repetitive tasks. Manage tasks alongside your notes for a seamless workflow.'
-  },
-  {
-    icon: Shield,
-    title: 'Secure and Accessible',
-    description: 'Access your notes anytime, anywhere, with seamless syncing across devices. Safeguard your work with archive and trash features.'
+    icon: TrendingUp,
+    title: 'Built for Growth',
+    description: 'Whether you\'re a student, creator, or professional, Weavernote grows with you—adapting to your needs and boosting your productivity.'
   }
 ];
 
 export function BenefitsSection() {
   return (
-    <div className="bg-white py-16 sm:py-24">
+    <div className="bg-gray-50 py-16 sm:py-24">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-12">
+        <div className="text-center mb-16">
           <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900">
             Why Choose Weavernote?
           </h2>
@@ -37,23 +37,27 @@ export function BenefitsSection() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {benefits.map((benefit, index) => {
             const Icon = benefit.icon;
             return (
               <div 
                 key={index} 
-                className="relative p-6 bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow"
+                className="flex items-start p-8 bg-white rounded-2xl shadow-lg hover:shadow-xl transition-shadow duration-300"
               >
-                <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center mb-4">
-                  <Icon className="w-6 h-6 text-yellow-600" />
+                <div className="flex-shrink-0">
+                  <div className="w-14 h-14 bg-yellow-50 rounded-xl flex items-center justify-center">
+                    <Icon className="w-7 h-7 text-yellow-600" />
+                  </div>
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                  {benefit.title}
-                </h3>
-                <p className="text-gray-600">
-                  {benefit.description}
-                </p>
+                <div className="ml-6">
+                  <h3 className="text-xl font-bold text-gray-900 mb-3">
+                    {benefit.title}
+                  </h3>
+                  <p className="text-gray-600 leading-relaxed">
+                    {benefit.description}
+                  </p>
+                </div>
               </div>
             );
           })}
