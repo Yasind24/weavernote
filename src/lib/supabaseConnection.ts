@@ -6,6 +6,7 @@ class SupabaseConnectionManager {
   private reconnectTimeout: NodeJS.Timeout | null = null;
   private channel: RealtimeChannel | null = null;
   private isReconnecting: boolean = false;
+  private lastActiveSession: boolean = false;
 
   private constructor() {
     this.setupConnectionHandling();
@@ -47,15 +48,14 @@ class SupabaseConnectionManager {
 
   private async handleVisibilityChange() {
     if (document.visibilityState === 'visible') {
-      // Check for valid session first
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        return;
-      }
       
-      const isConnected = await this.checkConnection();
-      if (!isConnected) {
-        await this.reconnect();
+      // Only attempt reconnection if we previously had an active session
+      if (this.lastActiveSession || session) {
+        const isConnected = await this.checkConnection();
+        if (!isConnected) {
+          await this.reconnect();
+        }
       }
     }
   }
@@ -76,29 +76,16 @@ class SupabaseConnectionManager {
     this.isReconnecting = true;
     
     try {
-      // Force disconnect all existing connections
       await supabase.realtime.disconnect();
       
-      // Clean up existing channel
       if (this.channel) {
         await this.channel.unsubscribe();
         this.channel = null;
       }
 
-      // Wait a bit before reconnecting
       await new Promise(resolve => setTimeout(resolve, 100));
-
-      // Reconnect realtime client
       await supabase.realtime.connect();
-
-      // Setup new connection monitoring
       this.setupConnectionHandling();
-
-      // Verify connection with a test query
-      const { error } = await supabase.from('notes').select('id').limit(1);
-      if (error) {
-        throw error;
-      }
 
       this.isReconnecting = false;
     } catch (error) {
@@ -110,24 +97,15 @@ class SupabaseConnectionManager {
 
   public async checkConnection(): Promise<boolean> {
     try {
-      // First check if we have a valid session
       const { data: { session } } = await supabase.auth.getSession();
+      this.lastActiveSession = !!session;
+
       if (!session) {
-        // No valid session, don't attempt to reconnect
         return false;
       }
 
-      // Then check realtime connection
       if (!supabase.realtime.isConnected()) {
         await this.reconnect();
-      }
-
-      // Verify with a test query
-      const { error } = await supabase.from('notes').select('id').limit(1);
-      
-      if (error) {
-        await this.reconnect();
-        return false;
       }
 
       return true;

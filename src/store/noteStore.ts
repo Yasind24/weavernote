@@ -55,7 +55,6 @@ const useNoteStore = create<NoteStore>((set, get) => ({
       console.error('Error fetching notes:', error);
       const message = error instanceof Error ? error.message : 'Failed to fetch notes';
       set({ error: message });
-      toast.error(message);
     } finally {
       set({ isFetching: false });
     }
@@ -98,7 +97,6 @@ const useNoteStore = create<NoteStore>((set, get) => ({
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to create note';
       set({ error: message, loading: false });
-      toast.error(message);
       throw error;
     }
   },
@@ -119,7 +117,6 @@ const useNoteStore = create<NoteStore>((set, get) => ({
         tags: updates.tags || previousNote.tags || []
       } as DBNote;
 
-      // First update without returning data
       const { error: updateError } = await supabase
         .from('notes')
         .update(updateData)
@@ -127,7 +124,6 @@ const useNoteStore = create<NoteStore>((set, get) => ({
 
       if (updateError) throw updateError;
 
-      // Then fetch the updated note separately
       const { data: fetchedNote, error: fetchError } = await supabase
         .from('notes')
         .select('*')

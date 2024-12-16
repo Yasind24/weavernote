@@ -5,6 +5,7 @@ import { useClickOutside } from '../hooks/useClickOutside';
 import { formatDate } from '../utils/dateUtils';
 import { formatNoteContent } from '../utils/noteUtils';
 import type { Note } from '../types/Note';
+import { toast } from 'react-hot-toast';
 
 interface NoteCardProps {
   note: Note;
@@ -20,33 +21,59 @@ export default function NoteCard({ note, onEdit }: NoteCardProps) {
 
   const handleArchive = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    await updateNote(note.id, { is_archived: !note.is_archived });
+    try {
+      const updatedNote = await updateNote(note.id, { is_archived: !note.is_archived });
+      if (updatedNote) {
+        toast.success(note.is_archived ? 'Note unarchived' : 'Note archived');
+      }
+    } catch (error) {
+      toast.error('Failed to update note');
+    }
     setShowMenu(false);
   };
 
   const handleTrash = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    await updateNote(note.id, { 
-      is_trashed: true,
-      trashed_at: new Date().toISOString()
-    });
+    try {
+      const updatedNote = await updateNote(note.id, { 
+        is_trashed: true,
+        trashed_at: new Date().toISOString()
+      });
+      if (updatedNote) {
+        toast.success('Note moved to trash');
+      }
+    } catch (error) {
+      toast.error('Failed to move note to trash');
+    }
     setShowMenu(false);
   };
 
   const handleRestore = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    await updateNote(note.id, { 
-      is_trashed: false,
-      is_archived: false,
-      trashed_at: null
-    });
+    try {
+      const updatedNote = await updateNote(note.id, { 
+        is_trashed: false,
+        is_archived: false,
+        trashed_at: null
+      });
+      if (updatedNote) {
+        toast.success('Note restored successfully');
+      }
+    } catch (error) {
+      toast.error('Failed to restore note');
+    }
     setShowMenu(false);
   };
 
   const handleDelete = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (window.confirm('Are you sure you want to permanently delete this note?')) {
-      await deleteNote(note.id);
+      try {
+        await deleteNote(note.id);
+        toast.success('Note permanently deleted');
+      } catch (error) {
+        toast.error('Failed to delete note');
+      }
     }
     setShowMenu(false);
   };

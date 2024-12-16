@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage, type PersistOptions, type StateStorage } from 'zustand/middleware';
 import { supabase } from '../lib/supabase';
 import type { User } from '@supabase/supabase-js';
 
@@ -14,6 +14,32 @@ interface AuthState {
   refreshSession: () => Promise<void>;
 }
 
+type AuthStateStorage = Pick<AuthState, 'user'>;
+
+const storage: StateStorage = {
+  getItem: (name) => {
+    try {
+      const str = localStorage.getItem(name);
+      if (!str) return null;
+      const data = JSON.parse(str);
+      if (!data?.state?.user) return null;
+      return str;
+    } catch {
+      return null;
+    }
+  },
+  setItem: (name, value) => localStorage.setItem(name, value),
+  removeItem: (name) => localStorage.removeItem(name),
+};
+
+const persistOptions: PersistOptions<AuthState, AuthStateStorage> = {
+  name: 'auth-storage',
+  storage: createJSONStorage(() => storage),
+  partialize: (state) => ({ 
+    user: state.user 
+  }),
+};
+
 const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
@@ -24,55 +50,17 @@ const useAuthStore = create<AuthState>()(
 
       setUser: (user) => set({ user, initialized: true }),
 
-      signOut: async () => {
-        try {
-          // First disconnect realtime and cleanup all subscriptions
-          await supabase.realtime.disconnect();
-          
-          // Clear all local storage auth data
-          const prefix = 'sb-' + import.meta.env.VITE_SUPABASE_PROJECT_REF;
-          for (const key of Object.keys(localStorage)) {
-            if (key.startsWith(prefix) || key === 'auth-storage') {
-              localStorage.removeItem(key);
-            }
-          }
-          
-          // Clear session storage as well
-          sessionStorage.clear();
-          
-          try {
-            // Sign out from Supabase with global scope
-            await supabase.auth.signOut({ scope: 'global' });
-          } catch (error) {
-            console.log('Auth session already cleared');
-          }
-          
-          // Clear local state
-          set({ user: null, error: null, initialized: false });
-          
-          // Force a complete navigation to root
-          const baseUrl = window.location.origin;
-          window.location.assign(baseUrl);
-          
-        } catch (error) {
-          console.error('Error signing out:', error);
-          // Still clear local state even if API call fails
-          set({ user: null, error: null, initialized: false });
-          // Force navigation even on error
-          window.location.assign(window.location.origin);
-        }
-      },
-
       refreshSession: async () => {
         try {
           const { data: { session } } = await supabase.auth.getSession();
           if (session?.user) {
             set({ user: session.user, error: null });
+          } else {
+            set({ user: null, error: null });
           }
         } catch (error) {
           console.error('Error refreshing session:', error);
-          set({ error: 'Failed to refresh session' });
-          throw error;
+          set({ error: 'Failed to refresh session', user: null });
         }
       },
 
@@ -82,6 +70,11 @@ const useAuthStore = create<AuthState>()(
         set({ loading: true });
         try {
           const { data: { session } } = await supabase.auth.getSession();
+          
+          if (session && !get().user) {
+            await supabase.auth.refreshSession();
+          }
+          
           set({ 
             user: session?.user || null,
             initialized: true,
@@ -98,11 +91,37 @@ const useAuthStore = create<AuthState>()(
           });
         }
       },
+
+      signOut: async () => {
+        try {
+          await supabase.realtime.disconnect();
+          
+          const prefix = 'sb-' + import.meta.env.VITE_SUPABASE_PROJECT_REF;
+          for (const key of Object.keys(localStorage)) {
+            if (key.startsWith(prefix) || key === 'auth-storage') {
+              localStorage.removeItem(key);
+            }
+          }
+          
+          sessionStorage.clear();
+          
+          try {
+            await supabase.auth.signOut({ scope: 'global' });
+          } catch (error) {
+            console.log('Auth session already cleared');
+          }
+          
+          set({ user: null, error: null, initialized: false });
+          window.location.assign(window.location.origin);
+          
+        } catch (error) {
+          console.error('Error signing out:', error);
+          set({ user: null, error: null, initialized: false });
+          window.location.assign(window.location.origin);
+        }
+      }
     }),
-    {
-      name: 'auth-storage',
-      partialize: (state) => ({ user: state.user }),
-    }
+    persistOptions
   )
 );
 

@@ -143,6 +143,47 @@ export interface Database {
           can_edit?: boolean
         }
       }
+      user_subscriptions: {
+        Row: {
+          id: string
+          email: string
+          name: string | null
+          subscription_status: string
+          subscription_type: string
+          activated_at: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          email: string
+          name?: string | null
+          subscription_status: string
+          subscription_type: string
+          activated_at: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          email?: string
+          name?: string | null
+          subscription_status?: string
+          subscription_type?: string
+          activated_at?: string
+          created_at?: string
+          updated_at?: string
+        }
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      [_ in never]: never
     }
   }
 }

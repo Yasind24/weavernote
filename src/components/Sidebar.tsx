@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Archive, Trash2, LogOut, ChevronLeft, ChevronRight, Home, FolderPlus } from 'lucide-react';
+import { Archive, Trash2, LogOut, ChevronLeft, ChevronRight, Home, FolderPlus, MessageSquare } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 import useNotebookStore from '../store/notebookStore';
 import useFolderStore from '../store/folderStore';
@@ -10,7 +10,6 @@ import { Logo } from './Logo';
 import { EditProfileDialog } from './EditProfileDialog';
 import type { Folder, Notebook } from '../types/Note';
 import { toast } from 'react-hot-toast';
-import { supabase } from '../lib/supabase';
 
 interface SidebarProps {
   isCollapsed: boolean;
@@ -191,6 +190,10 @@ export function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
     }
   };
 
+  const handleFeedbackClick = () => {
+    window.open('https://weavernote.canny.io/feedback', '_blank');
+  };
+
   const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
   const greeting = `Hello, ${displayName}`;
 
@@ -305,6 +308,16 @@ export function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
       </div>
 
       <div className="flex-shrink-0 p-4 border-t border-gray-200 w-full overflow-x-hidden">
+        <button
+          onClick={handleFeedbackClick}
+          className={`w-full flex items-center ${
+            isCollapsed ? 'justify-center' : 'space-x-3'
+          } px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors mb-2`}
+          title={isCollapsed ? 'Feedback' : undefined}
+        >
+          <MessageSquare size={20} className="flex-shrink-0" />
+          {!isCollapsed && <span>Feedback</span>}
+        </button>
         <button
           onClick={handleSignOut}
           className={`w-full flex items-center ${

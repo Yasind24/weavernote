@@ -5,23 +5,26 @@ import useNotebookStore from '../store/notebookStore';
 import useNoteStore from '../store/noteStore';
 import useFolderStore from '../store/folderStore';
 import { toast } from 'react-hot-toast';
-import { AuthChangeEvent } from '@supabase/supabase-js';
+import type { AuthChangeEvent } from '@supabase/supabase-js';
+import { useSubscriptionStore } from '../store/subscriptionStore';
 
 export function useSupabase() {
   const { user, setUser, initialized } = useAuthStore();
   const { fetchNotebooks } = useNotebookStore();
   const { fetchNotes } = useNoteStore();
+  const { checkSubscription } = useSubscriptionStore();
 
   const handleAuthChange = useCallback(async (session: any) => {
     if (session?.user) {
       setUser(session.user);
+      if (session.user.email) {
+        await checkSubscription(session.user.email);
+      }
       try {
-        setTimeout(async () => {
-          await Promise.all([
-            fetchNotebooks(),
-            fetchNotes()
-          ]);
-        }, 0);
+        await Promise.all([
+          fetchNotebooks(),
+          fetchNotes()
+        ]);
       } catch (error) {
         console.error('Error fetching data:', error);
         toast.error('Failed to load your data');
@@ -29,7 +32,7 @@ export function useSupabase() {
     } else {
       setUser(null);
     }
-  }, [setUser, fetchNotebooks, fetchNotes]);
+  }, [setUser, fetchNotebooks, fetchNotes, checkSubscription]);
 
   useEffect(() => {
     if (!initialized) return;
@@ -39,16 +42,8 @@ export function useSupabase() {
         await handleAuthChange(session);
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
-      } else if (event === 'USER_UPDATED') {
-        if (session?.user) {
-          setUser(session.user);
-        }
+        window.location.href = '/';
       }
-    });
-
-    // Initial session check
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      handleAuthChange(session);
     });
 
     return () => {

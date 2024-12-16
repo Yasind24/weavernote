@@ -1,38 +1,46 @@
-import React from 'react';
-import { Auth as SupabaseAuth } from '@supabase/auth-ui-react';
-import { ThemeSupa } from '@supabase/auth-ui-shared';
-import { supabase } from '../lib/supabase';
-import { Footer } from './Footer';
+import { useAuth } from '../hooks/useAuth';
+import { Logo } from './Logo';
+import { X } from 'lucide-react';
 
-export function Auth() {
-  // Use VITE_SUPABASE_REDIRECT_URL from environment variables if available, otherwise fallback to environment check
-  const redirectUrl = import.meta.env.VITE_SUPABASE_REDIRECT_URL || 
-    (import.meta.env.DEV ? 'http://localhost:5173' : 'https://weavernote.com');
+interface AuthProps {
+  onClose: () => void;
+}
+
+export function Auth({ onClose }: AuthProps) {
+  const { signInWithGoogle } = useAuth();
+
+  const handleSignIn = async () => {
+    try {
+      await signInWithGoogle();
+    } catch (error) {
+      console.error('Sign in error:', error);
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col">
-      <div className="flex-1 flex items-center justify-center p-4">
-        <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
-          <h1 className="text-2xl font-bold text-center mb-8">Welcome to Weavernote</h1>
-          <SupabaseAuth
-            supabaseClient={supabase}
-            appearance={{
-              theme: ThemeSupa,
-              variables: {
-                default: {
-                  colors: {
-                    brand: '#eab308',
-                    brandAccent: '#ca8a04',
-                  },
-                },
-              },
-            }}
-            providers={['google']}
-            redirectTo={redirectUrl}
-          />
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-8 max-w-md w-full m-4 relative">
+        <button 
+          onClick={onClose}
+          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+        >
+          <X className="w-6 h-6" />
+        </button>
+        <div className="text-center">
+          <Logo className="mx-auto h-12 w-auto" />
+          <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
+            Sign in to Weavernote
+          </h2>
+        </div>
+        <div className="mt-8">
+          <button
+            onClick={handleSignIn}
+            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-yellow-600 hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
+          >
+            Continue with Google
+          </button>
         </div>
       </div>
-      <Footer showCredit={true} />
     </div>
   );
 }

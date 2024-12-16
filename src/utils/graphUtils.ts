@@ -1,5 +1,5 @@
 import { Node, Edge } from 'reactflow';
-import type { Note } from '../types';
+import type { Note } from '../types/Note';
 
 export type LayoutType = 'circular' | 'horizontal' | 'vertical' | 'grid';
 
@@ -94,8 +94,7 @@ export const createEdges = (notes: Note[]): Edge[] => {
     const references = extractNoteReferences(note.content);
     references.forEach(refId => {
       if (notes.some(n => n.id === refId)) {
-        // Use consistent handles for source and target
-        const edgeId = createEdgeId(note.id, refId, 'source-bottom', 'target-top');
+        const edgeId = `edge-${note.id}-${refId}`;
         
         if (!processedConnections.has(edgeId)) {
           processedConnections.add(edgeId);
@@ -103,13 +102,13 @@ export const createEdges = (notes: Note[]): Edge[] => {
             id: edgeId,
             source: note.id,
             target: refId,
-            sourceHandle: 'source-bottom',
-            targetHandle: 'target-top',
             style: { 
               stroke: '#eab308', 
               strokeWidth: 2,
             },
             className: 'hover:cursor-pointer',
+            type: 'smoothstep',
+            animated: false,
           });
         }
       }

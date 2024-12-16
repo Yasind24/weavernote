@@ -70,17 +70,17 @@ export function NoteGraph({ notes, onNoteSelect }: NoteGraphProps) {
         const updatedContent = insertNoteReference(sourceNote.content, targetNote.id, targetNote.title);
         await updateNote(sourceNote.id, { content: updatedContent });
 
-        const edgeId = createEdgeId(params.source, params.target, params.sourceHandle || '', params.targetHandle || '');
+        const edgeId = `edge-${params.source}-${params.target}`;
         
         if (!edges.some(edge => edge.id === edgeId)) {
           const newEdge = {
             id: edgeId,
             source: params.source,
             target: params.target,
-            sourceHandle: params.sourceHandle,
-            targetHandle: params.targetHandle,
             style: { stroke: '#eab308', strokeWidth: 2 },
             className: 'hover:cursor-pointer',
+            type: 'smoothstep',
+            animated: false,
           };
 
           setEdges(eds => addEdge(newEdge, eds));
@@ -190,9 +190,17 @@ export function NoteGraph({ notes, onNoteSelect }: NoteGraphProps) {
         maxZoom={1.5}
         defaultViewport={{ x: 0, y: 0, zoom: 1 }}
         connectionMode={ConnectionMode.Loose}
-        snapToGrid={true}
+        snapToGrid={false}
         snapGrid={[15, 15]}
         proOptions={{ hideAttribution: true }}
+        deleteKeyCode={null}
+        multiSelectionKeyCode={null}
+        selectionKeyCode={null}
+        elevateNodesOnSelect={false}
+        panOnDrag={true}
+        zoomOnScroll={true}
+        zoomOnPinch={true}
+        preventScrolling={true}
       >
         <Background 
           gap={12}
