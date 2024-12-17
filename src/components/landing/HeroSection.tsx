@@ -4,6 +4,12 @@ import { useSubscriptionStore } from '../../store/subscriptionStore';
 import toast from 'react-hot-toast';
 import { Logo } from '../Logo';
 import { openCheckout } from '../../lib/lemonsqueezy';
+import Visualizer from '../../../media/Visualizer.png';
+import AIStudio from '../../../media/AI studio.png';
+import OrganizeBetter from '../../../media/OrganizeBetter.png';
+import Customize from '../../../media/Customize.png';
+import SearchAndTag from '../../../media/Search and tag.png';
+import DistractionFree from '../../../media/Distraction free.png';
 
 // Add Google logo SVG component
 interface GoogleLogoProps {
@@ -42,27 +48,27 @@ const Spinner = () => (
 // Add these product images (adjust paths and add more as needed)
 const productImages = [
   {
-    src: "../media/Visualizer.png",
+    src: Visualizer,
     alt: "Weavernote Knowledge Graph"
   },
   {
-    src: "/media/AI studio.png",
+    src: AIStudio,
     alt: "Weavernote AI Assistant"
   },
   {
-    src: "/media/OrganizeBetter.png",
+    src: OrganizeBetter,
     alt: "Weavernote organization"
   },
   {
-    src: "../media/Customize.png",
+    src: Customize,
     alt: "Weavernote Note Taking"
   },
   {
-    src: "../media/Search and tag.png",
+    src: SearchAndTag,
     alt: "Weavernote Search"
   },
   {
-    src: "../media/Distraction free.png",
+    src: DistractionFree,
     alt: "Weavernote read mode"
   }
 ];
