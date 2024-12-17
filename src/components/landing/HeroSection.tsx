@@ -39,6 +39,34 @@ const Spinner = () => (
   </svg>
 );
 
+// Add these product images (adjust paths and add more as needed)
+const productImages = [
+  {
+    src: "../media/Visualizer.png",
+    alt: "Weavernote Knowledge Graph"
+  },
+  {
+    src: "/media/AI studio.png",
+    alt: "Weavernote AI Assistant"
+  },
+  {
+    src: "/media/OrganizeBetter.png",
+    alt: "Weavernote organization"
+  },
+  {
+    src: "../media/Customize.png",
+    alt: "Weavernote Note Taking"
+  },
+  {
+    src: "../media/Search and tag.png",
+    alt: "Weavernote Search"
+  },
+  {
+    src: "../media/Distraction free.png",
+    alt: "Weavernote read mode"
+  }
+];
+
 interface HeroSectionProps {
   pricingRef: React.RefObject<HTMLDivElement>;
   onGetStarted: () => void;
@@ -49,6 +77,7 @@ export function HeroSection({ pricingRef, onGetStarted }: HeroSectionProps) {
   const { hasActiveSubscription, checkSubscription } = useSubscriptionStore();
   const [isLoading, setIsLoading] = useState(false);
   const [isVideoOpen, setIsVideoOpen] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   useEffect(() => {
     if (session?.user?.email) {
@@ -155,45 +184,79 @@ export function HeroSection({ pricingRef, onGetStarted }: HeroSectionProps) {
           </div>
 
           <main className="mt-8 sm:mt-12 md:mt-16 px-4 sm:px-6 lg:px-8">
-            <div className="text-center lg:text-left lg:grid lg:grid-cols-12 lg:gap-8">
-              <div className="lg:col-span-6 xl:col-span-5">
+            <div className="text-center lg:text-left lg:grid lg:grid-cols-12 lg:gap-12">
+              <div className="lg:col-span-5">
                 <h1 className="text-4xl tracking-tight font-extrabold text-gray-900 sm:text-5xl md:text-6xl">
-                  <span className="block">Weave Your Notes into Knowledge.</span>{' '}
-                  <span className="block text-yellow-500 text-3xl md:text-4xl">Smarter, Faster, Better.</span>
+                  <span className="block">Weave Your Notes into Knowledge.</span>
+                  <span className="block text-yellow-500 text-3xl md:text-4xl mt-3">
+                    Smarter, Faster, Better.
+                  </span>
                 </h1>
-                <p className="mt-3 text-base text-gray-500 sm:mt-5 sm:text-lg sm:max-w-xl sm:mx-auto md:mt-5 md:text-xl lg:mx-0">
-                Weavernote is your ultimate platform to effortlessly organize, connect, and visualize your notes—powered by AI to be your personal knowledge companion.
-                </p>
-                <p className="mt-1 text-base text-gray-500 sm:mt-1 sm:text-lg sm:max-w-xl sm:mx-auto md:mt-1 md:text-xl lg:mx-0">Perfect for students, creators, and lifelong learners.</p>
-                <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                
+                <div className="mt-6 space-y-4">
+                  <p className="text-lg text-gray-600 sm:text-xl">
+                    Weavernote is your ultimate platform to effortlessly organize, connect, and visualize your notes—powered by AI to be your personal knowledge companion.
+                  </p>
+                  <p className="text-lg text-gray-600 sm:text-xl">
+                    Perfect for students, creators, and lifelong learners.
+                  </p>
+                </div>
+
+                <div className="mt-8 flex justify-center lg:justify-start">
                   <button
                     onClick={onGetStarted}
-                    className="rounded-md px-8 py-3 text-base font-medium text-white bg-yellow-500 hover:bg-yellow-600 md:py-4 md:text-lg md:px-10 transform transition-all hover:scale-105 shadow-sm inline-flex items-center justify-center disabled:opacity-75 disabled:cursor-wait"
+                    className="rounded-md px-8 py-3 text-base font-medium text-white bg-yellow-500 hover:bg-yellow-600 md:py-4 md:text-lg md:px-10 transform transition-all hover:scale-105 shadow-md inline-flex items-center justify-center disabled:opacity-75 disabled:cursor-wait w-full sm:w-auto"
                     disabled={isLoading}
                   >
                     {getButtonContent()}
                   </button>
                 </div>
               </div>
-              <div className="mt-12 lg:mt-0 lg:col-span-6 xl:col-span-7">
-                <div 
-                  className="relative mx-auto w-full rounded-lg shadow-lg lg:max-w-none aspect-video cursor-pointer hover:opacity-90 transition-opacity group"
-                  onClick={() => setIsVideoOpen(true)}
-                >
-                  <img
-                    className="w-full h-full rounded-lg object-cover"
-                    src="https://img.youtube.com/vi/PL7m8UXvBAM/maxresdefault.jpg"
-                    alt="Weavernote Demo"
-                  />
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-[68px] h-[48px] bg-[#FF0000] rounded-lg flex items-center justify-center group-hover:bg-[#CC0000] transition-colors">
+              <div className="mt-12 lg:mt-0 lg:col-span-7">
+                <div className="space-y-6">
+                  <div className="relative">
+                    <img
+                      src={productImages[currentImageIndex].src}
+                      alt={productImages[currentImageIndex].alt}
+                      className="w-full shadow-lg"
+                    />
+                    <div className="absolute inset-x-0 bottom-4 flex justify-center space-x-2">
+                      {productImages.map((_, index) => (
+                        <button
+                          key={index}
+                          className={`w-2 h-2 rounded-full ${
+                            index === currentImageIndex ? 'bg-yellow-500' : 'bg-gray-300'
+                          }`}
+                          onClick={() => setCurrentImageIndex(index)}
+                        />
+                      ))}
+                    </div>
+                    <button
+                      className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 rounded-full p-2 hover:bg-white shadow-md"
+                      onClick={() => setCurrentImageIndex((prev) => (prev === 0 ? productImages.length - 1 : prev - 1))}
+                    >
+                      ←
+                    </button>
+                    <button
+                      className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 rounded-full p-2 hover:bg-white shadow-md"
+                      onClick={() => setCurrentImageIndex((prev) => (prev === productImages.length - 1 ? 0 : prev + 1))}
+                    >
+                      →
+                    </button>
+                  </div>
+
+                  <button
+                    onClick={() => setIsVideoOpen(true)}
+                    className="w-full py-3 px-4 inline-flex items-center justify-center bg-gray-100 hover:bg-gray-200 transition-colors shadow-sm"
+                  >
+                    <div className="w-8 h-8 bg-[#FF0000] rounded-lg flex items-center justify-center mr-2">
                       <svg height="100%" version="1.1" viewBox="0 0 68 48" width="100%">
                         <path className="fill-white" d="M 45,24 27,14 27,34" />
                       </svg>
                     </div>
-                  </div>
+                    <span className="font-medium">Watch Demo Video</span>
+                  </button>
                 </div>
-                <p className="text-center mt-2 text-gray-600 font-medium">Watch the demo</p>
               </div>
             </div>
           </main>
